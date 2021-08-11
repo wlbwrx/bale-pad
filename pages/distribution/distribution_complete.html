@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        .pick-list {position: relative;padding: 10px;border-bottom: 1px solid #f5f5f5;font-size: 14px;}
+        .pick-list div {margin-top: 5px;}
+        .pick-list div:first-child {margin-top: 0;}
+        .pick-list text {color: #FF5722;}
+        .pick-list span {float: right;}
+
+        /*查看发货单列表*/
+        .mask-block1 {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form1 {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .mask-invoice-list {height: 300px;overflow: auto;}
+        .invoice-list {position: relative;padding: 10px;border-bottom: 1px solid #f5f5f5;font-size: 14px;}
+        .invoice-list div {margin-top: 5px;}
+        .invoice-list div:first-child {margin-top: 0;}
+        .invoice-list text {color: #FF5722;}
+        .invoice-list span {float: right;}
+        .sweep-code {position: absolute;top: -10px;right: -10px;background-color: rgba(0, 0, 0, 0.5);width: 40px;height: 40px;line-height: 40px;text-align: center;color: #fff;border-radius: 50%;z-index: 100;}
+        .sweep-code i {font-size: 22px;font-weight: bold;}
+        .mask-operation {display: flex;}
+        .btn2 {flex: 1;margin-left: -1px;font-size: 15px;}
+
+        /*查看发货单详情窗口*/
+        .mask-block2 {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form2 {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .mask-pro-list {height: 350px;overflow: auto;}
+        .pro-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px 0;display: flex;}
+        .pro-left img {display: block;width: 80px;height: 80px;border-radius: 5px;margin-right: 10px;}
+        .pro-right {width: 100%;margin: auto;}
+        .pro-all-number {position: absolute;right: 0;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 16px;border-radius: 5px;min-width: 30px;text-align: center;}
+        .pro-sku {font-size: 24px;color: #FF5722;}
+        .pro-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 30px;margin-top: 5px;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">已完成的拣货拨次单</div>
+            </div>
+        </header>
+        <div id="pickList" class="pick-block">
+
+        </div>
+    </div>
+
+    <!--查看发货单列表窗口-->
+    <div class="mask-block1">
+        <div class="mask-form1">
+            <div class="sweep-code" onclick="app.methods.hideInvoice()"><i class="iconfont icon-close"></i></div>
+            <div id="maskInvoiceList" class="mask-invoice-list">
+                
+            </div>
+            <div class="mask-operation">
+                <button class="btn btn2" onclick="app.methods.printWave()">打印拣货拨次单</button>
+                <button class="btn btn2" onclick="app.methods.printFaceSheet()">打印面单</button>
+            </div>
+        </div>
+    </div>
+
+    <!--查看发货单详情窗口-->
+    <div class="mask-block2">
+        <div class="mask-form2">
+            <div class="sweep-code" onclick="app.methods.hideGoods()"><i class="iconfont icon-close"></i></div>
+            <div id="maskProList" class="mask-pro-list">
+                
+            </div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                pickList: [], // 已完成的拣货拨次单列表
+                load: true, // 加载中
+                page: 1, // 当前页码
+                size: 10, // 每页的条数
+                total: 0, // 总页数
+                storehouseId: '', // 当前仓库
+                waveCode: '' // 当前拨次拣货单
+            },
+            methods: {
+                // 获取所有已完成的拣货拨次单
+                getPickCompleteList: function () {
+                    showLoading()
+                    requestJsonServer('/wave/list', 'GET', {
+                        status: 20,
+                        page: app.data.page,
+                        size: app.data.size
+                    }).then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                app.data.pickList = response.datas.content
+                                app.data.total = response.datas.totalPages
+                                // 显示拣货拨次单列表
+                                var list = response.datas.content
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div class="pick-list" onclick="app.methods.invoiceList(${list[i].storehouseId}, '${list[i].waveCode}')">
+                                                <div>修改时间：${timeFormat(list[i].updatedAt)}<span class="text-green">已完成</span></div>
+                                                <div>拣货拨次单号：${list[i].waveCode}</div>
+                                                <div>发货单数量：<text>${list[i].invoiceCount}</text></div>
+                                            </div>`
+                                }
+                                $('#pickList').html(html)
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 分页获取所有已完成的拣货拨次单
+                getMorePickCompleteList: function () {
+                    $('body').scroll(function () {
+                        var scrollTop = $(this).scrollTop()
+                        var scrollHeight = $(document).height()
+                        var windowHeight = $(this).height()
+                        if (scrollTop + windowHeight == scrollHeight) {
+                            if (app.data.load) {
+                                if (app.data.page < app.data.total) {
+                                    app.data.load = false
+                                    app.data.page++
+
+                                    showLoading()
+                                    requestJsonServer('/wave/list', 'GET', {
+                                        status: 20,
+                                        page: app.data.page,
+                                        size: app.data.size
+                                    }).then((response) => {
+                                        if (response.code == 1) {
+                                            if (response.datas) {
+                                                app.data.pickList.push.apply(app.data.pickList, response.datas.content)
+                                                var list = response.datas.content
+                                                var html = ''
+                                                for (const i in list) {
+                                                    html += `<div class="pick-list" onclick="app.methods.invoiceList(${list[i].storehouseId}, '${list[i].waveCode}')">
+                                                                <div>修改时间：${timeFormat(list[i].updatedAt)}<span class="text-green">已完成</span></div>
+                                                                <div>拣货拨次单号：${list[i].waveCode}</div>
+                                                                <div>发货单数量：<text>${list[i].invoiceCount}</text></div>
+                                                            </div>`
+                                                }
+                                                $('#pickList').append(html)
+                                                app.data.load = true
+                                            } else {
+                                                message('error', '获取失败')
+                                            }
+                                        } else if (response.code == -1 || response.code == -3) {
+                                            localStorage.removeItem('token')
+                                            window.location.href = '/pages/user/login.html'
+                                        } else {
+                                            message('error', response.message)
+                                        }
+                                        hideLoading()
+                                    }).catch((error) => {
+                                        hideLoading()
+                                    })
+                                }
+                            } else {
+                                console.log('加载中')
+                            }
+                        }
+                    })
+                },
+
+                // 查看发货单列表窗口
+                invoiceList: function (storehouseId, waveCode) {
+                    app.data.storehouseId = storehouseId // 当前仓库
+                    app.data.waveCode = waveCode // 当前拨次拣货单
+                    showLoading()
+                    requestServer('/wave/' + waveCode + '/' + storehouseId + '/invoice', 'GET').then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                $('.mask-block1').css('display', 'flex')
+                                // 显示发货单列表
+                                var list = response.datas
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div class="invoice-list" onclick="app.methods.invoiceDetails(${list[i].storehouseId}, '${list[i].invoiceCode}')">
+                                                <div>${timeFormat(list[i].updatedAt)}${app.methods.getInvoiceStatus(list[i].status)}</div>
+                                                <div>发货单号：${list[i].invoiceCode}</div>
+                                                <div>拣货单号：${list[i].pickCode}</div>
+                                                <div>拣货框：<text>${list[i].containerCode}</text></div>
+                                            </div>`
+                                }
+                                $('#maskInvoiceList').html(html)
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 获取发货单的状态
+                getInvoiceStatus: function (status) {
+                    switch (status) {
+                        case 20:
+                            return '<span class="text-red">拣货中</span>'
+                            break
+                        case 30:
+                            return '<span class="text-red">待配货</span>'
+                            break
+                        case 40:
+                            return '<span class="text-red">待复核</span>'
+                            break
+                        case 50:
+                            return '<span class="text-green">已完成</span>'
+                            break
+                        case -10:
+                            return '<span class="text-gray">已取消</span>'
+                            break
+                        default:
+                            return '<span class="text-gray">无状态</span>'
+                    }
+                },
+
+                // 隐藏发货单列表窗口
+                hideInvoice: function () {
+                    $('.mask-block1').css('display', 'none')
+                },
+                
+                // 查看发货单详情窗口
+                invoiceDetails: function (storehouseId, invoiceCode) {
+                    showLoading()
+                    requestServer('/invoice/' + invoiceCode + '/' + storehouseId, 'GET').then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                $('.mask-block2').css('display', 'flex')
+                                // 显示发货单详情
+                                var list = response.datas[0].invoiceDetails
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div class="pro-list">
+                                                <div class="pro-left">
+                                                    <img src="${list[i].productSkuImage}" />
+                                                </div>
+                                                <div class="pro-right">
+                                                    <div class="pro-all-number">${list[i].quantity}</div>
+                                                    <div class="pro-sku">${list[i].productSkuBarcode}</div>
+                                                    <div class="pro-specs">${list[i].productSkuName}</div>
+                                                </div>
+                                            </div>`
+                                }
+                                $('#maskProList').html(html)
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 隐藏发货单详情窗口
+                hideGoods: function () {
+                    $('.mask-block2').css('display', 'none')
+                },
+
+                // 打印拣货拨次单
+                printWave: function () {
+                    var waveCode = app.data.waveCode
+                    var paramList = [{
+                        type: 3, // 拣货拨次单
+                        datas: JSON.stringify([waveCode]),
+                        code: JSON.stringify([waveCode])
+                    }]
+
+                    // 新增打印信息
+                    showLoading()
+                    requestServer('/print', 'POST', paramList).then((response) => {
+                        if (response.code == 1) {
+                            message('success', '请在PC打印面板进行查看')
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 打印面单
+                printFaceSheet: function () {
+                    var storehouseId = app.data.storehouseId
+                    var waveCode = app.data.waveCode
+                    showLoading()
+                    requestServer('/wave/' + waveCode + '/' + storehouseId + '/invoice/print', 'GET').then((response) => {
+                        if (response.code == 1) {
+                            var list = []
+                            for (const i in response.datas) {
+                                list.push(response.datas[i].invoiceCode)
+                            }
+                            var paramList = [{
+                                type: 1, // 面单
+                                datas: JSON.stringify(response.datas),
+                                code: JSON.stringify(list)
+                            }]
+                            
+                            // 新增打印信息
+                            showLoading()
+                            requestServer('/print', 'POST', paramList).then((response) => {
+                                if (response.code == 1) {
+                                    message('success', '请在PC打印面板进行查看')
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getPickCompleteList() // 获取所有已完成的拣货拨次单
+                app.methods.getMorePickCompleteList() // 分页获取所有已完成的拣货拨次单
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

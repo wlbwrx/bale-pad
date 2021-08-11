@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">转-上架</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <input class="form-input" autofocus="autofocus" name="storehouse" onchange="app.methods.codeStorehouse()" onblur="onBlur()" placeholder="扫描库位" />
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 扫描库位
+                codeStorehouse: function () {
+                    var storehouse = $('input[name="storehouse"]').val().trim()
+                    if (storehouse != '') {
+                        window.location.href = 'turnshelf_next.html?storehouse=' + storehouse
+                        $('input[name="storehouse"]').val('')
+                        $('input[name="storehouse"]').focus()
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

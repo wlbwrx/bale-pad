@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .input-block {position: relative;padding: 10px;border-bottom: 1px solid #ddd;}
+        .input-block1 {padding: 10px;background-color: #f5f5f5;}
+        .invoice-number {font-size: 16px;color: #03A9F4;}
+
+        /*发货单状态*/
+        .invoice-block {font-size: 18px;}
+        .invoice-list {padding: 10px;border-bottom: 1px solid #f5f5f5;}
+        .invoice-list div {padding: 10px 0;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">查发货单状态</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <input class="form-input" name="oddNumber" onfocus="app.methods.selectOddNumber()" onkeydown="app.methods.codeOddNumber(event)" onblur="onBlur()" placeholder="扫描物流单号查询" />
+        </div>
+        <div class="input-block1">
+            <div class="invoice-number">物流单号：</div>
+        </div>
+    </div>
+
+    <!--发货单状态-->
+    <div id="invoiceList" class="invoice-block">
+        <div class="invoice-list">
+            <div>发货单号：<span></span></div>
+            <div>发货单状态：</div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 选中扫描物流单号
+                selectOddNumber: function () {
+                    $('input[name="oddNumber"]').select()
+                },
+
+                // 扫描物流单号
+                codeOddNumber: function (e) {
+                    var oddNumber = $('input[name="oddNumber"]').val().trim()
+                    if (e.keyCode == 13 && oddNumber != '') {
+                        showLoading()
+                        requestServer('/wave/invoice/' + oddNumber + '/status', 'GET').then((response) => {
+                            if (response.code == 1) {
+                                soundReminder('success')
+                                $('.invoice-number').text('物流单号：' + oddNumber)
+                                // 显示发货单列表
+                                var list = response.datas
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div class="invoice-list">
+                                                <div>发货单号：<span>${list[i].invoiceCode}</span></div>
+                                                <div>发货单状态：${app.methods.invoiceStatus(list[i].status)}</div>
+                                            </div>`
+                                }
+                                $('#invoiceList').html(html)
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+							    window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                                $('.invoice-number').text('物流单号：')
+                                $('#invoiceList').html(
+                                    `<div class="invoice-list">
+                                        <div>发货单号：<span></span></div>
+                                        <div>发货单状态：</div>
+                                    </div>`
+                                )
+                            }
+                            $('input[name="oddNumber"]').select()
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 发货单状态
+                invoiceStatus: function (status) {
+                    var html = ''
+                    if (status == 10) {
+                        html = `<span class="text-green">已创建</span>`
+                    } else if (status == 20) {
+                        html = `<span class="text-red">拣货中</span>`
+                    } else if (status == 30) {
+                        html = `<span class="text-red">待配货</span>`
+                    } else if (status == 40) {
+                        html = `<span class="text-red">待复核</span>`
+                    } else if (status == 50) {
+                        html = `<span class="text-red">待打包</span>`
+                    } else if (status == 60) {
+                        html = `<span class="text-red">待出库</span>`
+                    } else if (status == 70) {
+                        html = `<span class="text-green">已出库</span>`
+                    } else if (status == 80) {
+                        html = `<span class="text-yellow">待退回</span>`
+                    } else if (status == 90) {
+                        html = `<span class="text-green">已退回</span>`
+                    } else if (status == 100) {
+                        html = `<span class="text-red">已拆分</span>`
+                    } else if (status == 110) {
+                        html = `<span class="text-green">配货完成</span>`
+                    } else if (status == 120) {
+                        html = `<span class="text-red">缺货</span>`
+                    } else if (status == -10) {
+                        html = `<span class="text-red">发货作废</span>`
+                    }
+                    return html
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="oddNumber"]').select()
+        }
+    </script>
+</body>
+
+</html>

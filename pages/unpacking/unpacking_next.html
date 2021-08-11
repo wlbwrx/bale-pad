@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+        .invoice-number {font-size: 18px;}
+        .odd-number {color: #666;}
+        .pro-block {padding-bottom: 70px;}
+        .pro-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px;display: flex;}
+        .pro-left img {display: block;width: 100px;height: 100px;border-radius: 5px;margin-right: 10px;}
+        .pro-right {width: 100%;margin: auto;}
+        .pro-all-number {position: absolute;top: 10px;right: 10px;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .pro-sku {font-size: 26px;color: #FF5722;}
+        .pro-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 2;color: #FF5722;margin-top: 5px;}
+        .pro-operation {display: flex;margin-top: 5px;justify-content: flex-end;}
+        .pro-operation .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .pro-operation input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .pro-operation input:focus {outline: none;}
+        .pro-list-1 {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px 0;display: flex;}
+        .pro-sku-1 {font-size: 18px;color: #FF5722;}
+        .pro-specs-1 {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;color: #FF5722;margin-top: 5px;}
+        .printBox {display: none;}
+
+        /*预览拆包窗口*/
+        .preview-code {position: absolute;top: -10px;right: -10px;background-color: rgba(0, 0, 0, 0.5);width: 40px;height: 40px;line-height: 40px;text-align: center;color: #fff;border-radius: 50%;}
+        .preview-code i {font-size: 22px;font-weight: bold;}
+        .mask-block {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .preview-tab {display: flex;}
+        .preview-tab div {flex: 1;text-align: center;height: 40px;line-height: 40px;border-bottom: 1px solid #ddd;}
+        .active-tab {background-color: #f5f5f5;color: #1E9FFF;}
+        .mask-pro-list {height: 310px;overflow: auto;}
+        .mask-pro-list .pro-left img {display: block;width: 90px;height: 90px;border-radius: 5px;margin-right: 10px;}
+        .mask-operation {display: flex;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 100px;}
+
+        .footer-operation {position: fixed;bottom: 0;width: 100%;background-color: #f5f5f5;border-top: 1px solid #ddd;display: flex;}
+        .footer-operation div {flex: 1;height: 50px;line-height: 50px;text-align: center;}
+        .footer-operation div:active {opacity: 0.8;}
+        .footer-operation div:first-child {border-right: 1px solid #ddd;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">拆包</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <div id="invoiceNumber" class="invoice-number"></div>
+            <div id="pickCode" class="odd-number"></div>
+        </div>
+        <div id="proList" class="pro-block">
+
+        </div>
+        <div class="footer-operation">
+            <div onclick="app.methods.returnPage()">返回</div>
+            <div onclick="app.methods.preview()">预览并拆包</div>
+        </div>
+    </div>
+
+    <!--预览拆包窗口-->
+    <div class="mask-block">
+        <div class="mask-form">
+            <div class="preview-code" onclick="app.methods.hidePreview()"><i class="iconfont icon-close"></i></div>
+            <div class="preview-tab">
+                <div data-status="1" class="active-tab">拆包一</div>
+                <div data-status="2">拆包二</div>
+            </div>
+            <div id="maskProList" class="mask-pro-list">
+
+            </div>
+            <div class="mask-operation">
+                <button class="btn btn-green" onClick="app.methods.unpacking()">拆包</button>
+            </div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                invoiceDetails: [], // 商品明细列表
+                packageOne: [], // 拆包一
+                packageTwo: [] // 拆包二
+            },
+            methods: {
+                // 获取商品明细列表
+                getProList: function () {
+                    var pickCode = UrlParam.paramValues('pickCode')[0]
+                    showLoading()
+                    requestServer('/wave/invoice/' + pickCode + '/details', 'GET').then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                app.data.invoiceDetails = response.datas.invoiceDetails
+                                $('#invoiceNumber').text('发货单号：' + response.datas.invoiceCode)
+                                $('#pickCode').text('物流单号：' + response.datas.pickCode)
+                                // 显示商品明细列表
+                                var list = response.datas.invoiceDetails
+                                var html = ''
+                                for (const i in list) {
+                                    // 默认当前商品拆包数量是0
+                                    list[i].number = 0
+                                    html += `<div class="pro-list">
+                                                <div class="pro-left">
+                                                    <img src="${list[i].productSkuImage}" />
+                                                </div>
+                                                <div class="pro-right">
+                                                    <div class="pro-all-number">${list[i].quantity}</div>
+                                                    <div class="pro-sku">${list[i].productSkuBarcode}</div>
+                                                    <div class="pro-specs">${list[i].productSkuName}</div>
+                                                    <div class="pro-operation">
+                                                        <button onclick="app.methods.proMin(${i})" class="btn">-</button>
+                                                        <input id="proIndex_${i}" type="number" value="${list[i].number}" onchange="app.methods.proManual(${i})" onblur="onBlur()" />
+                                                        <button onclick="app.methods.proMax(${i})" class="btn">+</button>
+                                                    </div>
+                                                </div>
+                                            </div>`
+                                }
+                                $('#proList').html(html)
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 减少商品数量
+                proMin: function (index) {
+                    var list = app.data.invoiceDetails // 商品明细列表
+                    if (list[index].number > 0) {
+                        list[index].number = parseInt(list[index].number) - 1
+                        $('#proIndex_' + index).val(list[index].number)
+                        app.data.invoiceDetails = list // 防止输入后数量不同步
+                    } else {
+                        message('error', '商品个数不能为负数')
+                    }
+                },
+
+                // 增加商品数量
+                proMax: function (index) {
+                    var list = app.data.invoiceDetails // 商品明细列表
+                    if (list[index].number < list[index].quantity) {
+                        list[index].number = parseInt(list[index].number) + 1
+                        $('#proIndex_' + index).val(list[index].number)
+                        app.data.invoiceDetails = list // 防止输入后数量不同步
+                    } else {
+                        message('error', '商品个数达到上限')
+                    }
+                },
+
+                // 手动设置商品数量
+                proManual: function (index) {
+                    var list = app.data.invoiceDetails // 商品明细列表
+                    var number = parseInt($('#proIndex_' + index).val()) // 当前输入的数量
+                    if (number < 0) {
+                        message('error', '商品个数不能为负数')
+                    } else if (number > list[index].quantity) {
+                        message('error', '商品个数达到上限')
+                        $('#proIndex_' + index).val(list[index].quantity)
+                        list[index].number = list[index].quantity
+                    } else {
+                        list[index].number = number
+                        app.data.invoiceDetails = list // 防止输入后数量不同步
+                    }
+                },
+
+                // 返回
+                returnPage: function () {
+                    var r = confirm('确认返回重新扫描？')
+                    if (r) {
+                        window.history.go(-1)
+                    }
+                },
+
+                // 显示预览窗口
+                preview: function () {
+                    $('.mask-block').css('display', 'flex')
+                    var list = app.data.invoiceDetails // 商品明细列表
+                    var packageOne = [] // 拆包一
+                    var packageTwo = [] // 拆包二
+                    for (const i in list) {
+                        if (list[i].number > 0) {
+                            packageOne.push(list[i])
+                        }
+                    }
+                    for (const i in list) {
+                        if (list[i].quantity - list[i].number > 0) {
+                            packageTwo.push(list[i])
+                        }
+                    }
+                    app.data.packageOne = packageOne
+                    app.data.packageTwo = packageTwo
+                    app.methods.getUnpackingList() // 获取拆包列表
+                },
+
+                // 获取拆包列表
+                getUnpackingList: function () {
+                    var status = $('.preview-tab .active-tab').data('status') // 当前的tab
+                    var packageOne = app.data.packageOne // 拆包一
+                    var packageTwo = app.data.packageTwo // 拆包二
+
+                    if (status == 1) {
+                        // 拆包一渲染
+                        var html = ''
+                        for (const i in packageOne) {
+                            html += `<div class="pro-list-1">
+                                        <div class="pro-left">
+                                            <img src="${packageOne[i].productSkuImage}" />
+                                        </div>
+                                        <div class="pro-right">
+                                            <div class="pro-all-number">${packageOne[i].number}</div>
+                                            <div class="pro-sku-1">${packageOne[i].productSkuBarcode}</div>
+                                            <div class="pro-specs-1">${packageOne[i].productSkuName}</div>
+                                        </div>
+                                    </div>`
+                        }
+                        $('#maskProList').html(html)
+                    } else {
+                        // 拆包二渲染
+                        var html = ''
+                        for (const i in packageTwo) {
+                            html += `<div class="pro-list-1">
+                                        <div class="pro-left">
+                                            <img src="${packageTwo[i].productSkuImage}" />
+                                        </div>
+                                        <div class="pro-right">
+                                            <div class="pro-all-number">${packageTwo[i].quantity - packageTwo[i].number}</div>
+                                            <div class="pro-sku-1">${packageTwo[i].productSkuBarcode}</div>
+                                            <div class="pro-specs-1">${packageTwo[i].productSkuName}</div>
+                                        </div>
+                                    </div>`
+                        }
+                        $('#maskProList').html(html)
+                    }
+                },
+
+                // 拆包
+                unpacking: function () {
+                    var packageOne = [] // 拆包一
+                    var packageTwo = [] // 拆包二
+                    for (const i in app.data.packageOne) {
+                        packageOne.push({
+                            productSkuBarcode: app.data.packageOne[i].productSkuBarcode,
+                            quantity: app.data.packageOne[i].number
+                        })
+                    }
+                    for (const i in app.data.packageTwo) {
+                        packageTwo.push({
+                            productSkuBarcode: app.data.packageTwo[i].productSkuBarcode,
+                            quantity: app.data.packageTwo[i].quantity - app.data.packageTwo[i].number
+                        })
+                    }
+                    var paramList = {
+                        pickCode: UrlParam.paramValues('pickCode')[0],
+                        firstPack: packageOne,
+                        secondPack: packageTwo
+                    }
+
+                    var r = confirm('确认拆包？')
+                    if (r) {
+                        showLoading()
+                        requestServer('/wave/invoice/split', 'PUT', paramList).then((response) => {
+                            if (response.code == 1) {
+                                message('success', '拆包成功')
+                                setTimeout(function () {
+                                    window.history.go(-1)
+                                }, 1000)
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+							    window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 隐藏预览窗口
+                hidePreview: function () {
+                    $('.mask-block').css('display', 'none')
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getProList() // 获取商品明细列表
+
+                // 切换拆包
+                $('.preview-tab div').on('click', function () {
+                    $('.preview-tab div').removeClass('active-tab')
+                    $(this).addClass('active-tab')
+                    app.methods.getUnpackingList() // 获取拆包列表
+                })
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .shelves-block {padding-bottom: 70px;}
+        .not-data {text-align: center;padding-top: 100px;}
+        .not-data div:nth-child(1) {font-size: 40px;color: #1E9FFF;}
+        .not-data div:nth-child(2) {margin-top: 10px;color: #999;}
+        .shelves-img {width: 100%;display: block;}
+        .shelves-sku {display: flex;padding: 10px;font-size: 18px;}
+        .shelves-sku div {flex: 1;}
+        .shelves-sku div:nth-child(1) {color: #FF5722;}
+        .shelves-sku div:nth-child(2) {color: #5FB878;text-align: right;}
+        .shelves-title {font-size: 14px;padding: 0 10px 5px;}
+        .shelves-specs {color: #FF5722;padding: 0 10px 5px;font-size: 18px;}
+        .mask-pro-operation {display: flex;padding: 5px 0;}
+        .mask-pro-all, .mask-pro-number {flex: 1;}
+        .mask-pro-all {text-align: center;line-height: 35px;}
+        .mask-pro-number {display: flex;}
+        .mask-pro-number .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .mask-pro-number input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .mask-pro-number input:focus {outline: none;}
+
+        .mask-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 100px;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <!-- <header>
+            <div class="m-toolbar">
+                <div class="m-title">转-上架</div>
+            </div>
+        </header> -->
+        <div id="shelvesDetails" class="shelves-block">
+
+        </div>
+        <div class="mask-operation">
+            <input class="form-input" autofocus="autofocus" name="sku" onchange="app.methods.codeSku()" onblur="onBlur()" placeholder="扫描商品sku" />
+            <button id="shelvesBtn" class="btn btn1 btn-gray" onClick="app.methods.shelves()">上架</button>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                shelvesList: [], // 待上架商品列表
+                shelvesDetails: {} // 待上架商品详情
+            },
+            methods: {
+                // 设置库位
+                setStorehouse: function () {
+                    $('#shelvesDetails').html(
+                        `<div class="not-data">
+                            <div>${UrlParam.paramValues('storehouse')[0]}</div>
+                            <div>请扫描商品sku</div>
+                        </div>`
+                    )
+                },
+
+                // 扫描商品sku
+                codeSku: function () {
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+                    
+                    showLoading()
+                    requestServer('/wave/invoice/shelves/' + sku, 'GET').then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                message('success', '获取成功')
+                                $('#shelvesBtn').removeClass('btn-gray')
+                                $('#shelvesBtn').addClass('btn-green')
+                                response.datas.number = 1 // 默认上架数量为1
+                                app.data.shelvesDetails = response.datas
+                                var obj = response.datas
+                                $('input[name="sku"]').val('')
+                                $('#shelvesDetails').html(
+                                    `<img class="shelves-img" src="${obj.productSkuImage}" />
+                                    <div class="shelves-sku">
+                                        <div>${obj.productSkuBarcode}</div>
+                                        <div>${UrlParam.paramValues('storehouse')[0]}</div>
+                                    </div>
+                                    <div class="shelves-title">${obj.productName}</div>
+                                    <div class="shelves-specs">${obj.productSkuName}</div>
+                                    <div class="mask-pro-operation">
+                                        <div class="mask-pro-all">可上架数：${obj.quantity}</div>
+                                        <div class="mask-pro-number">
+                                            <button onclick="app.methods.shelvesMin()" class="btn">-</button>
+                                            <input id="shelvesNumber" type="number" value="${obj.number}" onchange="app.methods.shelvesManual()" onblur="onBlur()" />
+                                            <button onclick="app.methods.shelvesMax()" class="btn">+</button>
+                                        </div>
+                                    </div>`
+                                )
+                            } else {
+                                message('error', '获取失败')
+                                $('input[name="sku"]').val('')
+                                $('input[name="sku"]').focus()
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                            $('input[name="sku"]').val('')
+                            $('input[name="sku"]').focus()
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 减少上架商品数量
+                shelvesMin: function () {
+                    var obj = app.data.shelvesDetails // 待上架商品详情
+                    if (obj.number > 1) {
+                        obj.number = parseInt(obj.number) - 1
+                        $('#shelvesNumber').val(obj.number)
+                        app.data.shelvesDetails = obj // 防止输入后数量不同步
+                    } else {
+                        message('error', '上架商品个数不能小于1')
+                    }
+                },
+
+                // 增加上架商品数量
+                shelvesMax: function () {
+                    var obj = app.data.shelvesDetails // 待上架商品详情
+                    if (obj.number < obj.quantity) {
+                        obj.number = parseInt(obj.number) + 1
+                        $('#shelvesNumber').val(obj.number)
+                        app.data.shelvesDetails = obj // 防止输入后数量不同步
+                    } else {
+                        message('error', '上架商品个数达到上限')
+                    }
+                },
+
+                // 手动上架商品数量
+                shelvesManual: function () {
+                    var obj = app.data.shelvesDetails // 待上架商品详情
+                    var number = parseInt($('#shelvesNumber').val()) // 当前输入的数量
+                    if (number < 1) {
+                        message('error', '上架商品个数不能小于1')
+                    } else if (number > obj.quantity) {
+                        message('error', '上架商品个数达到上限')
+                        $('#shelvesNumber').val(obj.quantity)
+                        obj.number = obj.quantity
+                    } else {
+                        obj.number = number
+                        app.data.shelvesDetails = obj // 防止输入后数量不同步
+                    }
+                },
+
+                // 上架
+                shelves: function () {
+                    var obj = app.data.shelvesDetails // 待上架商品详情
+                    if (!$.isEmptyObject(obj)) {
+                        var r = confirm('确认上架？')
+                        if (r) {
+                            var paramList = [{
+                                batchNumber: obj.batchNumber,
+                                shelf: UrlParam.paramValues('storehouse')[0],
+                                productSkuBarcode: obj.productSkuBarcode,
+                                quantity: obj.number
+                            }]
+
+                            showLoading()
+                            requestServer('/wave/invoice/shelf', 'POST', paramList).then((response) => {
+                                if (response.code == 1) {
+                                    message('success', '上架成功')
+                                    app.data.shelvesDetails = {}
+                                    $('#shelvesDetails').html(
+                                        `<div class="not-data">
+                                            <div>${UrlParam.paramValues('storehouse')[0]}</div>
+                                            <div>请扫描商品sku</div>
+                                        </div>`
+                                    )
+                                    $('input[name="sku"]').focus()
+                                    $('#shelvesBtn').removeClass('btn-green')
+                                    $('#shelvesBtn').addClass('btn-gray')
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+                        }
+                    } else {
+                        message('error', '暂无要上架的商品')
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.setStorehouse() // 设置库位
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

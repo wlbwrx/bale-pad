@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">拆包</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <input class="form-input" name="pickCode" onfocus="app.methods.selectPickCode()" onkeydown="app.methods.pickCode(event)" onblur="onBlur()" placeholder="扫描物流单号" />
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 选中扫描物流单号
+                selectPickCode: function () {
+                    $('input[name="pickCode"]').select()
+                },
+
+                // 扫描物流单号
+                pickCode: function (e) {
+                    var pickCode = $('input[name="pickCode"]').val().trim()
+                    if (e.keyCode == 13 && pickCode != '') {
+                        showLoading()
+                        requestServer('/wave/invoice/' + pickCode + '/details', 'GET').then((response) => {
+                            if (response.code == 1) {
+                                if (response.datas) {
+                                    message('success', '获取成功')
+                                    soundReminder('success')
+                                    setTimeout(function () {
+                                        window.location.href = 'unpacking_next.html?pickCode=' + pickCode
+                                        $('input[name="pickCode"]').select()
+                                    }, 1000)
+                                } else {
+                                    message('error', '获取失败')
+                                    soundReminder('error')
+                                    $('input[name="pickCode"]').select()
+                                }
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+							    window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                                $('input[name="pickCode"]').select()
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="pickCode"]').select()
+        }
+    </script>
+</body>
+
+</html>

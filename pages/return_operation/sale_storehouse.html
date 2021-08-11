@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .sale-block {padding-bottom: 70px;}
+        .sale-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px;display: flex;}
+        .sale-left img {display: block;width: 100px;height: 100px;border-radius: 5px;margin-right: 10px;}
+        .sale-right {width: 100%;margin: auto;}
+        .icon-del {position: absolute;top: 14px;right: 10px;font-size: 28px;color: #999;}
+        .sale-sku {font-size: 28px;color: #FF5722;padding-right: 30px;}
+        .sale-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 120px;margin-top: 40px;}
+        .sale-operation {position: absolute;right: 10px;bottom: 10px;display: flex;margin-top: 5px;}
+        .sale-operation .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .sale-operation input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .sale-operation input:focus {outline: none;}
+
+        .mask-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 100px;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">待清卖出库</div>
+            </div>
+        </header>
+        <div id="saleList" class="sale-block">
+
+        </div>
+        <div class="mask-operation">
+            <input class="form-input" name="sku" onfocus="app.methods.selectSku()" onkeydown="app.methods.codeSku(event)" onblur="onBlur()" placeholder="扫描商品sku" />
+            <button class="btn btn1 btn-green" onClick="app.methods.sale()">清卖</button>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                saleList: [] // 待清卖商品列表
+            },
+            methods: {
+                // 选中扫描sku
+                selectSku: function () {
+                    $('input[name="sku"]').select()
+                },
+                
+                // 扫描商品sku
+                codeSku: function (e) {
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+                    
+                    if (e.keyCode == 13 && sku != '') {
+                        showLoading()
+                        requestServer('/storehouse/rejection/sku/clean?productSkuBarcode=' + sku, 'GET').then((response) => {
+                            if (response.code == 1) {
+                                if (response.datas) {
+                                    var sku = response.datas.productSkuBarcode
+                                    // 判断是否已经存在sku
+                                    if (app.methods.isSku(sku)) {
+                                        // 判断是否数量已达上限
+                                        if (app.methods.isMax(sku)) {
+                                            message('error', '商品个数达到上限')
+                                            soundReminder('error')
+                                        } else {
+                                            var index = parseInt(app.methods.isIndex(sku)) // 获取待清卖商品列表下标
+                                            app.data.saleList[index].number += 1
+                                            $('#' + sku).val(app.data.saleList[index].number)
+                                            soundReminder('success')
+                                        }
+                                    } else {
+                                        response.datas.number = 1
+                                        app.data.saleList.push(response.datas)
+                                        var html = `<div id="product_${response.datas.productSkuBarcode}" class="sale-list">
+                                                        <div class="sale-left">
+                                                            <img src="${response.datas.productSkuImage}" />
+                                                        </div>
+                                                        <div class="sale-right">
+                                                            <i class="iconfont icon-del" onclick="app.methods.saleDel(${response.datas.productSkuBarcode})"></i>
+                                                            <div class="sale-sku">${response.datas.productSkuBarcode}</div>
+                                                            <div class="sale-specs">${response.datas.productSkuName}</div>
+                                                            <div class="sale-operation">
+                                                                <button onclick="app.methods.saleMin(${response.datas.productSkuBarcode})" class="btn">-</button>
+                                                                <input id="${response.datas.productSkuBarcode}" type="number" value="${response.datas.number}" onchange="app.methods.saleManual(${response.datas.productSkuBarcode})" />
+                                                                <button onclick="app.methods.saleMax(${response.datas.productSkuBarcode})" class="btn">+</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>`
+                                        $('#saleList').append(html)
+                                        soundReminder('success')
+                                    }
+                                } else {
+                                    message('error', '获取失败')
+                                    soundReminder('error')
+                                }
+                                $('input[name="sku"]').select()
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                                $('input[name="sku"]').select()
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 判断是否已经存在sku
+                isSku: function (sku) {
+                    var list = app.data.saleList
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return true
+                        }
+                    }
+                    return false
+                },
+
+                // 判断是否数量已达上限
+                isMax: function (sku) {
+                    var list = app.data.saleList
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            if (list[i].number == list[i].inventory) {
+                                return true
+                            }
+                        }
+                    }
+                    return false
+                },
+
+                // 获取待清卖商品列表下标
+                isIndex: function (sku) {
+                    var list = app.data.saleList
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return i
+                        }
+                    }
+                },
+
+                // 删除清卖的商品
+                saleDel: function (sku) {
+                    var list = app.data.saleList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待清卖商品列表下标
+                    var r = confirm('确认删除？')
+                    if (r) {
+                        app.data.saleList.splice(index, 1)
+                        $('#product_' + sku).remove()
+                    }
+                },
+
+                // 减少清卖数量
+                saleMin: function (sku) {
+                    var list = app.data.saleList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待清卖商品列表下标
+                    if (list[index].number > 1) {
+                        list[index].number = parseInt(list[index].number) - 1
+                        $('#' + sku).val(list[index].number)
+                        app.data.saleList = list
+                    } else {
+                        message('error', '清卖个数不能小于1')
+                    }
+                },
+
+                // 增加清卖数量
+                saleMax: function (sku) {
+                    var list = app.data.saleList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待清卖商品列表下标
+                    if (list[index].number < list[index].inventory) {
+                        list[index].number = parseInt(list[index].number) + 1
+                        $('#' + sku).val(list[index].number)
+                        app.data.saleList = list
+                    } else {
+                        message('error', '清卖个数达到上限')
+                    }
+                },
+
+                // 手动设置上架数量
+                saleManual: function (sku) {
+                    var list = app.data.saleList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待清卖商品列表下标
+                    var number = parseInt($('#' + sku).val()) // 当前输入的数量
+                    if (number < 1) {
+                        message('error', '清卖个数不能小于1')
+                    } else if (number > list[index].inventory) {
+                        message('error', '清卖个数达到上限')
+                        $('#' + sku).val(list[index].inventory)
+                        list[index].number = list[index].inventory
+                    } else {
+                        list[index].number = number
+                        app.data.saleList = list
+                    }
+                },
+
+                // 清卖
+                sale: function () {
+                    var list = app.data.saleList // 待清卖商品列表
+                    if (list.length) {
+                        var r = confirm('确认清卖？')
+                        if (r) {
+                            var paramList = []
+                            for (const i in list) {
+                                paramList.push({
+                                    storehouseId: list[i].storehouseId,
+                                    productId: list[i].productId,
+                                    productName: list[i].productName,
+                                    productSkuName: list[i].productSkuName,
+                                    productSkuImage: list[i].productSkuImage,
+                                    productSkuBarcode: list[i].productSkuBarcode,
+                                    quantity: list[i].number
+                                })
+                            }
+
+                            showLoading()
+                            requestServer('/storehouse/rejection/sku/clean/out', 'POST', paramList).then((response) => {
+                                if (response.code == 1) {
+                                    message('success', '清卖成功')
+                                    setTimeout(function () {
+                                        location.reload()
+                                    }, 1000)
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+                        }
+                    } else {
+                        message('error', '暂无要清卖的商品')
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="sku"]').select()
+        }
+    </script>
+</body>
+
+</html>

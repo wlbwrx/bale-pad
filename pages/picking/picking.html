@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        .picked-goods {padding: 10px;background-color: #5FB878;color: #fff;text-align: center;}
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+        /* .pick-block {padding-bottom: 70px;} */
+        .pick-list {position: relative;padding: 10px;border-bottom: 1px solid #f5f5f5;font-size: 14px;}
+        .pick-list div {margin-top: 5px;}
+        .pick-list div:first-child {margin-top: 0;}
+        .pick-list text {color: #FF5722;}
+        .pick-list span {float: right;}
+
+        /*创建拣货拨次单窗口*/
+        .mask-block {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .sweep-code {position: absolute;top: -10px;right: -10px;background-color: rgba(0, 0, 0, 0.5);width: 40px;height: 40px;line-height: 40px;text-align: center;color: #fff;border-radius: 50%;}
+        .sweep-code i {font-size: 22px;font-weight: bold;}
+        .mask-pick-details {padding-bottom: 20px;}
+        .mask-pick-title {text-align: center;padding: 10px 0;}
+        .mask-pick-operation {/*display: flex;*/margin: 5px 0;text-align: center;}
+        .mask-pick-number {flex: 1;}
+        .mask-pick-number {display: flex;padding: 10px 0;justify-content: center;}
+        .mask-pick-number .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .mask-pick-number input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .mask-pick-number input:focus {outline: none;}
+        .mask-pick-operation label {font-size: 14px;margin-left: 15px;}
+        .mask-operation {display: flex;}
+        .btn2 {flex: 1;margin-left: -1px;font-size: 16px;}
+
+        .footer-operation {position: fixed;bottom: 0;width: 100%;background-color: #f5f5f5;border-top: 1px solid #ddd;display: flex;}
+        .footer-operation div {flex: 1;height: 50px;line-height: 50px;text-align: center;}
+        .footer-operation div:active {opacity: 0.8;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">拣货</div>
+            </div>
+        </header>
+        <div class="picked-goods" onclick="app.methods.pickedComplete()">查看已完成的拣货拨次单</div>
+        <div class="input-block">
+            <input class="form-input" name="waveCode" onfocus="app.methods.selectWaveCode()" onkeydown="app.methods.codeWaveCode(event)" onblur="onBlur()" placeholder="扫描认领拣货拨次单" />
+        </div>
+        <div id="pickList" class="pick-block">
+
+        </div>
+        <!-- <div class="footer-operation">
+            <div onclick="app.methods.createPick()">创建拣货拨次单</div>
+        </div> -->
+    </div>
+
+    <!--创建拣货拨次单窗口-->
+    <div class="mask-block">
+        <div class="mask-form">
+            <div class="sweep-code" onclick="app.methods.hidePick()"><i class="iconfont icon-close"></i></div>
+            <div class="mask-pick-details">
+                <div class="mask-pick-title">设置发货单数量</div>
+                <div class="mask-pick-operation">
+                    <div class="mask-pick-number">
+                        <button onclick="app.methods.pickMin()" class="btn">-</button>
+                        <input id="pickNumber" type="number" value="10" onchange="app.methods.pickManual()" onblur="onBlur()" />
+                        <button onclick="app.methods.pickMax()" class="btn">+</button>
+                    </div>
+                </div>
+                <div class="mask-pick-title">物流</div>
+                <div class="mask-pick-operation">
+                    <label><input name="logisticsType" type="radio" value="0" checked />全部</label>
+                    <label><input name="logisticsType" type="radio" value="1" />711</label>
+                    <label><input name="logisticsType" type="radio" value="2" />宅配</label>
+                </div>
+                <div class="mask-pick-title">发货单类型</div>
+                <div class="mask-pick-operation">
+                    <label><input name="invoiceType" type="radio" value="0" checked />全部</label>
+                    <label><input name="invoiceType" type="radio" value="1" />特货</label>
+                    <label><input name="invoiceType" type="radio" value="2" />普货</label>
+                </div>
+            </div>
+            <div class="mask-operation">
+                <button class="btn btn2" onClick="app.methods.hidePick()">取消</button>
+                <button id="createPick" class="btn btn2" onClick="app.methods.createPickSure()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                pickList: [] // 拣货拨次单列表
+            },
+            methods: {
+                // 选中扫描物拣货拨次单
+                selectWaveCode: function () {
+                    $('input[name="waveCode"]').select()
+                },
+
+                // 扫描认领拣货拨次单
+                codeWaveCode: function (e) {
+                    var waveCode = $('input[name="waveCode"]').val().trim()
+                    if (e.keyCode == 13 && waveCode != '') {
+                        showLoading()
+                        requestJsonServer('/wave/wavecode/pickup', 'GET', {
+                            waveCode: waveCode
+                        }).then((response) => {
+                            if (response.code == 1) {
+                                message('success', '认领成功')
+                                soundReminder('success')
+                                app.methods.getPickList() // 获取所有拣货拨次单
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                            }
+                            $('input[name="waveCode"]').select()
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 获取所有拣货拨次单
+                getPickList: function () {
+                    showLoading()
+                    requestJsonServer('/wave/pda/list', 'GET', {
+                        pickBy: localStorage.getItem('userName'),
+                        page: 0,
+                        size: 5000
+                    }).then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                app.data.pickList = response.datas
+                                // 显示拣货拨次单列表
+                                var list = response.datas
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div class="pick-list" onclick="app.methods.pickNext('${i}')">
+                                                <div>修改时间：${timeFormat(list[i].updatedAt)}${app.methods.getPickStatus(list[i].status)}</div>
+                                                <div>拣货拨次单号：${list[i].waveCode}</div>
+                                                <div>发货单数量：<text>${list[i].invoiceCount}</text></div>
+                                            </div>`
+                                }
+                                $('#pickList').html(html)
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 获取拣货拨次单的状态
+                getPickStatus: function (status) {
+                    switch (status) {
+                        case 10:
+                            return '<span class="text-red">待拣货</span>'
+                            break
+                        case 20:
+                            return '<span class="text-green">已完成</span>'
+                            break
+                        case -10:
+                            return '<span class="text-gray">已取消</span>'
+                            break
+                        default:
+                            return '<span class="text-gray">无状态</span>'
+                    }
+                },
+
+                // 查看已完成的拣货拨次单
+                pickedComplete: function () {
+                    window.location.href = 'picking_complete.html'
+                },
+
+                // 创建拣货拨次单窗口
+                createPick: function () {
+                    $('.mask-block').css('display', 'flex')
+                    $('#pickNumber').val(10)
+                },
+
+                // 隐藏创建拣货拨次单窗口
+                hidePick: function () {
+                    $('.mask-block').css('display', 'none')
+                },
+
+                // 减少发货单数量
+                pickMin: function () {
+                    var number = parseInt($('#pickNumber').val())
+                    if (number > 1) {
+                        number -= 1
+                        $('#pickNumber').val(number)
+                    } else {
+                        message('error', '发货单数量不能小于1')
+                    }
+                },
+
+                // 增加发货单数量
+                pickMax: function () {
+                    var number = parseInt($('#pickNumber').val())
+                    if (number < 50) {
+                        number += 1
+                        $('#pickNumber').val(number)
+                    } else {
+                        message('error', '发货单数量不能大于50')
+                    }
+                },
+
+                // 手动发货单数量
+                pickManual: function () {
+                    var number = parseInt($('#pickNumber').val())
+                    if (number < 1) {
+                        message('error', '发货单数量不能小于1')
+                    } else if (number > 50) {
+                        message('error', '发货单数量不能大于50')
+                        $('#pickNumber').val(50)
+                    } else {
+                        $('#pickNumber').val(number)
+                    }
+                },
+
+                // 创建拣货拨次单
+                createPickSure: function () {
+                    $('#createPick').attr('disabled', true) // 禁用创建
+                    var invoiceCount = parseInt($('#pickNumber').val())
+                    var logisticsType = $("input[name='logisticsType']:checked").val()
+                    var invoiceType = $("input[name='invoiceType']:checked").val()
+                    showLoading()
+                    requestJsonServer('/wave/generate', 'GET', {
+                        invoiceCount: invoiceCount,
+                        logisticsType: logisticsType,
+                        invoiceType: invoiceType
+                    }).then((response) => {
+                        if (response.code == 1) {
+                            message('success', response.datas.messages)
+                            $('.mask-block').css('display', 'none')
+                            app.methods.printAll(response.datas.waveCode) // 一键打印（拣货拨次单和面单）
+                            app.methods.getPickList() // 获取所有拣货拨次单
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        $('#createPick').attr('disabled', false) // 开始创建
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 一键打印（拣货拨次单和面单）
+                printAll: function (waveCode) {
+                    showLoading()
+                    requestServer('/wave/' + waveCode + '/invoice/print', 'GET').then((response) => {
+                        if (response.code == 1) {
+
+                            var list = []
+                            list.push({
+                                waveCode: waveCode
+                            })
+                            list.push({
+                                list: response.datas
+                            })
+                            var paramList = [{
+                                type: 4, // 拣货拨次单和面单
+                                datas: JSON.stringify(list),
+                                code: JSON.stringify([waveCode])
+                            }]
+
+                            // 新增打印信息
+                            showLoading()
+                            requestServer('/print', 'POST', paramList).then((response) => {
+                                if (response.code == 1) {
+                                    // message('success', '请在PC打印面板进行查看')
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 拣货拨次单明细
+                pickNext: function (index) {
+                    var obj = app.data.pickList[index]
+                    window.location.href = 'picking_next.html?storehouseId=' + obj.storehouseId + '&waveCode=' + obj.waveCode
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getPickList() // 获取所有拣货拨次单
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+
+            // 页面显示刷新
+            window.addEventListener('pageshow', function () {
+                if (sessionStorage.getItem('refresh') == 'true') {
+                    sessionStorage.removeItem('refresh')
+                    location.reload()
+                }
+            })
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="waveCode"]').select()
+        }
+    </script>
+</body>
+
+</html>

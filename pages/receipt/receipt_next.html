@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+        .input-block1 {padding: 10px;background-color: #f5f5f5;}
+        .odd-number {font-size: 18px;}
+        .receipt-number {font-size: 16px;color: #03A9F4;}
+        .pro-block {padding-bottom: 70px;}
+        .pro-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px;display: flex;}
+        .pro-left img {display: block;width: 100px;height: 100px;border-radius: 5px;margin-right: 10px;}
+        .pro-right {width: 100%;margin: auto;}
+        .pro-all-number {position: absolute;right: 10px;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .pro-number {position: absolute;right: 10px;bottom: 10px;border: 1px solid #5FB878;color: #5FB878;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .pro-sku {font-size: 26px;color: #FF5722;}
+        .pro-title {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 2;padding-right: 45px;color: #999;font-size: 12px;margin-top: 5px;}
+        .pro-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 45px;color: #FF5722;margin-top: 5px;}
+        .pro-operation {display: flex;margin-top: 5px;}
+        .pro-operation .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .pro-operation input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .pro-operation input:focus {outline: none;}
+        .pro-list-1 {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px 0;display: flex;}
+        .pro-sku-1 {font-size: 18px;color: #FF5722;}
+        .pro-specs-1 {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;color: #FF5722;margin-top: 5px;}
+        .printBox {display: none;}
+        
+        /*批量收货窗口*/
+        .sweep-code {position: absolute;top: -10px;right: -10px;background-color: rgba(0, 0, 0, 0.5);width: 40px;height: 40px;line-height: 40px;text-align: center;color: #fff;border-radius: 50%;z-index: 1;}
+        .sweep-code i {font-size: 22px;font-weight: bold;}
+        .mask-block {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .mask-pro-list {height: 350px;overflow: auto;}
+        .mask-pro-list .pro-left img {display: block;width: 90px;height: 90px;border-radius: 5px;margin-right: 10px;}
+        .mask-operation {display: flex;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 100px;}
+
+        /*单个商品收货窗口*/
+        .mask-block1 {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form1 {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .mask-pro-details img {width: 100%;}
+        .mask-pro-title {font-size: 14px;}
+        .mask-pro-specs {color: #FF5722;}
+        .mask-pro-operation {display: flex;margin: 5px 0;}
+        .mask-pro-all, .mask-pro-number {flex: 1;}
+        .mask-pro-all {text-align: center;line-height: 35px;}
+        .mask-pro-number {display: flex;}
+        .mask-pro-number .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .mask-pro-number input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .mask-pro-number input:focus {outline: none;}
+        .btn2 {flex: 1;margin-left: -1px;font-size: 16px;}
+
+        .footer-operation {position: fixed;bottom: 0;width: 100%;background-color: #f5f5f5;border-top: 1px solid #ddd;display: flex;}
+        .footer-operation div {flex: 1;height: 50px;line-height: 50px;text-align: center;}
+        .footer-operation div:active {opacity: 0.8;}
+        .footer-operation div:first-child {border-right: 1px solid #ddd;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">收货</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <div id="oddNumber" class="odd-number"></div>
+        </div>
+        <div id="proList" class="pro-block">
+
+        </div>
+        <div class="footer-operation">
+            <div onclick="app.methods.showSweep()">扫码收货</div>
+            <!-- <div onclick="app.methods.printAll()">打印所有条码</div> -->
+        </div>
+    </div>
+
+    <!--批量收货窗口-->
+    <div class="mask-block">
+        <div class="mask-form">
+            <div class="sweep-code" onclick="app.methods.hideSweep()"><i class="iconfont icon-close"></i></div>
+            <div id="maskProList" class="mask-pro-list">
+
+            </div>
+            <div class="mask-operation">
+                <input class="form-input" name="sku" onfocus="app.methods.selectSku()" onkeydown="app.methods.codeSku(event)" onblur="onBlur()" placeholder="扫描商品sku" />
+                <button class="btn btn1 btn-green" onClick="app.methods.bulkReceipt()">收货</button>
+            </div>
+        </div>
+    </div>
+
+    <!--单个商品收货窗口-->
+    <div class="mask-block1">
+        <div class="mask-form1">
+            <div class="sweep-code" onclick="app.methods.hidePro()"><i class="iconfont icon-close"></i></div>
+            <div id="maskProDetails" class="mask-pro-details">
+
+            </div>
+            <div class="mask-operation">
+                <button class="btn btn2" onClick="app.methods.collectPro()">收货</button>
+                <!-- <button class="btn btn2" onClick="app.methods.codePro()">打码</button>
+                <button class="btn btn2" onClick="app.methods.collectCodePro()">收货打码</button> -->
+            </div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                batchReceiptDetails: [], // 收货单明细列表
+                mergeDetails: [], // 合并不同收货单中相同sku的商品
+                sweepSkuList: [], // 已扫描商品列表
+                proDetails: {} // 商品详情
+            },
+            methods: {
+                // 获取收货单明细
+                getBatchreceipt: function () {
+                    var oddNumber = UrlParam.paramValues('oddNumber')[0]
+                    showLoading()
+                    requestServer('/batchreceipt/' + oddNumber + '/batchReceipt/details', 'GET').then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas.length == 0) {
+                                setTimeout(function () {
+                                    window.history.go(-1)
+                                }, 1000)
+                            } else if (response.datas.length > 0) {
+                                app.data.batchReceiptDetails = response.datas
+                                $('#oddNumber').text('物流单号：' + oddNumber)
+                                // 显示收货单明细列表
+                                var list = response.datas
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div class="input-block1">
+                                                <div class="receipt-number">收货单号：${list[i].batchNumber}</div>
+                                            </div>`
+                                    for (const j in list[i].batchReceiptDetails) {
+                                        // 默认当前收货数量是1
+                                        list[i].batchReceiptDetails[j].number = 1
+                                        html += `<div class="pro-list" onclick="app.methods.proDetails(${i}, ${j})">
+                                                    <div class="pro-left">
+                                                        <img src="${list[i].batchReceiptDetails[j].productSkuImage}" />
+                                                    </div>
+                                                    <div class="pro-right">
+                                                        <div class="pro-all-number">${list[i].batchReceiptDetails[j].originalQuantity}</div>
+                                                        <div class="pro-number">${list[i].batchReceiptDetails[j].shelveQuantity}</div>
+                                                        <div class="pro-sku">${list[i].batchReceiptDetails[j].productSkuBarcode}</div>
+                                                        <div class="pro-title">${list[i].batchReceiptDetails[j].productName}</div>
+                                                        <div class="pro-specs">${list[i].batchReceiptDetails[j].productSkuName}</div>
+                                                    </div>
+                                                </div>`
+                                    }
+                                }
+                                $('#proList').html(html)
+                                app.methods.merge() // 合并不同收货单中相同sku的商品
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 显示扫码收货窗口
+                showSweep: function () {
+                    $('.mask-block').css('display', 'flex')
+                    $('input[name="sku"]').select()
+                },
+
+                // 隐藏扫码收货窗口
+                hideSweep: function () {
+                    $('.mask-block').css('display', 'none')
+                },
+
+                // 选中扫描sku
+                selectSku: function () {
+                    $('input[name="sku"]').select()
+                },
+
+                // 扫描商品sku
+                codeSku: function (e) {
+                    var list = app.data.batchReceiptDetails // 收货单明细列表
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+                    
+                    if (e.keyCode == 13 && sku != '') {
+                        // 判断商品列表中是否有该商品
+                        if (app.methods.isSku(sku)) {
+                            // 判断已扫描商品列表中是否有该商品
+                            if (app.methods.isSweepSku(sku)) {
+                                // 给已扫描列表中商品增加数量
+                                var index = parseInt(app.methods.isSweepIndex(sku)) // 获取已扫描商品列表该商品下标
+                                var list = app.data.sweepSkuList // 已扫描商品列表
+                                if (list[index].number < (list[index].originalQuantity - list[index].shelveQuantity)) {
+                                    list[index].number = parseInt(list[index].number) + 1
+                                    $('#sweepIndex_' + index).val(list[index].number)
+                                    soundReminder('success')
+                                } else {
+                                    message('error', '商品个数达到上限')
+                                    soundReminder('error')
+                                }
+                            } else {
+                                // 给已扫描列表中添加商品
+                                var i = parseInt(app.methods.isIndex(sku)) // 获取商品列表该商品下标
+                                app.data.sweepSkuList.push(app.data.mergeDetails[i]) // 已扫描商品列表
+
+                                var sweepIndex = parseInt(app.methods.isSweepIndex(sku)) // 获取已扫描商品列表该商品下标
+                                var obj = app.data.sweepSkuList[sweepIndex] // 已扫描的商品
+                                $('#maskProList').append(
+                                    `<div class="pro-list-1">
+                                        <div class="pro-left">
+                                            <img src="${obj.productSkuImage}" />
+                                        </div>
+                                        <div class="pro-right">
+                                            <div class="pro-sku-1">${obj.productSkuBarcode}</div>
+                                            <div class="pro-specs-1">${obj.productSkuName}</div>
+                                            <div class="pro-operation">
+                                                <button onclick="app.methods.sweepMin(${sweepIndex})" class="btn">-</button>
+                                                <input id="sweepIndex_${sweepIndex}" type="number" value="${obj.number}" onchange="app.methods.sweepManual(${sweepIndex})" />
+                                                <button onclick="app.methods.sweepMax(${sweepIndex})" class="btn">+</button>
+                                            </div>
+                                        </div>
+                                    </div>`
+                                )
+                                soundReminder('success')
+                            }
+                            $('input[name="sku"]').select()
+                        } else {
+                            message('error', '商品列表无该商品')
+                            soundReminder('error')
+                            $('input[name="sku"]').select()
+                        }
+                    }
+                },
+
+                // 合并不同收货单中相同sku的商品
+                merge: function () {
+                    var list = app.data.batchReceiptDetails // 收货单明细列表
+                    var list_ = []
+                    var res = []
+                    var list__ = []
+                    // 合并多个收货单中的数据
+                    for (const i in list) {
+                        for (const j in list[i].batchReceiptDetails) {
+                            list_.push(list[i].batchReceiptDetails[j])
+                        }
+                    }
+                    // 合并不同收货单中相同sku的商品
+                    for (const i in list_) {
+                        var n = res.indexOf(list_[i].productSkuBarcode)
+                        if (n == -1) {
+                            res.push(list_[i].productSkuBarcode)
+                            list__.push(list_[i])
+                        } else {
+                            list__[n].originalQuantity = list__[n].originalQuantity + list_[i].originalQuantity
+                            list__[n].shelveQuantity = list__[n].shelveQuantity + list_[i].shelveQuantity
+                        }
+                    }
+                    app.data.mergeDetails = list__ // 记录合并后的数据列表
+                },
+
+                // 判断商品列表中是否有该商品
+                isSku: function (sku) {
+                    var list = app.data.mergeDetails // 记录合并后的数据列表
+                    // 判断是否有该sku
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return true
+                        }
+                    }
+                    return false
+                },
+
+                // 判断已扫描商品列表中是否有该商品
+                isSweepSku: function (sku) {
+                    var list = app.data.sweepSkuList // 已扫描商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return true
+                        }
+                    }
+                    return false
+                },
+
+                // 获取商品列表该商品下标
+                isIndex: function (sku) {
+                    var list = app.data.mergeDetails // 合并不同收货单中相同sku的商品
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return i
+                        }
+                    }
+                },
+
+                // 获取已扫描商品列表该商品下标
+                isSweepIndex: function (sku) {
+                    var list = app.data.sweepSkuList // 已扫描商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return i
+                        }
+                    }
+                },
+
+                // 减少已扫描商品数量
+                sweepMin: function (sweepIndex) {
+                    var list = app.data.sweepSkuList // 已扫描商品列表
+                    if (list[sweepIndex].number > 1) {
+                        list[sweepIndex].number = parseInt(list[sweepIndex].number) - 1
+                        $('#sweepIndex_' + sweepIndex).val(list[sweepIndex].number)
+                        app.data.sweepSkuList = list // 防止输入后再扫描数量不同步
+                    } else {
+                        message('error', '商品个数不能小于1')
+                    }
+                },
+
+                // 增加已扫描商品数量
+                sweepMax: function (sweepIndex) {
+                    var list = app.data.sweepSkuList // 已扫描商品列表
+                    if (list[sweepIndex].number < (list[sweepIndex].originalQuantity - list[sweepIndex].shelveQuantity)) {
+                        list[sweepIndex].number = parseInt(list[sweepIndex].number) + 1
+                        $('#sweepIndex_' + sweepIndex).val(list[sweepIndex].number)
+                        app.data.sweepSkuList = list // 防止输入后再扫描数量不同步
+                    } else {
+                        message('error', '商品个数达到上限')
+                    }
+                },
+
+                // 手动设置已扫描商品数量
+                sweepManual: function (sweepIndex) {
+                    var list = app.data.sweepSkuList // 已扫描商品列表
+                    var number = parseInt($('#sweepIndex_' + sweepIndex).val()) // 当前输入的数量
+                    if (number < 1) {
+                        message('error', '商品个数不能小于1')
+                    } else if (number > (list[sweepIndex].originalQuantity - list[sweepIndex].shelveQuantity)) {
+                        message('error', '商品个数达到上限')
+                        $('#sweepIndex_' + sweepIndex).val(list[sweepIndex].originalQuantity - list[sweepIndex].shelveQuantity)
+                        list[sweepIndex].number = list[sweepIndex].originalQuantity - list[sweepIndex].shelveQuantity
+                    } else {
+                        list[sweepIndex].number = number
+                        app.data.sweepSkuList = list // 防止输入后再扫描数量不同步
+                    }
+                },
+
+                // 批量收货
+                bulkReceipt: function () {
+                    var list = app.data.sweepSkuList // 已扫描商品列表
+                    var paramList = []
+                    if (list.length) {
+                        for (const i in list) {
+                            paramList.push({
+                                storehouseId: list[i].storehouseId,
+                                batchNumber: '',
+                                productSkuBarcode: list[i].productSkuBarcode,
+                                quantity: list[i].number
+                            })
+                        }
+                        showLoading()
+                        requestServer('/batchreceipt/shelves', 'POST', paramList).then((response) => {
+                            if (response.code == 1) {
+                                message('success', '收货成功')
+                                $('.mask-block').css('display', 'none')
+                                $('#maskProList').html('')
+                                app.data.sweepSkuList = []
+                                $('#proList').html('')
+                                app.methods.getBatchreceipt() // 获取收货单明细
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+							    window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    } else {
+                        message('error', '请扫描sku进行收货')
+                    }
+                },
+
+                // 单个商品详情窗口
+                proDetails: function (i, j) {
+                    $('.mask-block1').css('display', 'flex')
+                    app.data.proDetails = app.data.batchReceiptDetails[i].batchReceiptDetails[j]
+                    var obj = app.data.batchReceiptDetails[i].batchReceiptDetails[j] // 商品详情
+                    $('#maskProDetails').html(
+                        `<img src="${obj.productSkuImage}" />
+                        <div class="mask-pro-title">${obj.productName}</div>
+                        <div class="mask-pro-specs">${obj.productSkuName}</div>
+                        <div class="mask-pro-operation">
+                            <div class="mask-pro-all">可收数：${obj.originalQuantity - obj.shelveQuantity}</div>
+                            <div class="mask-pro-number">
+                                <button onclick="app.methods.proMin()" class="btn">-</button>
+                                <input id="proDetailsNumber" type="number" value="${obj.number}" onchange="app.methods.proManual()" onblur="onBlur()" />
+                                <button onclick="app.methods.proMax()" class="btn">+</button>
+                            </div>
+                        </div>`
+                    )
+                },
+
+                // 隐藏单个商品详情窗口
+                hidePro: function () {
+                    $('.mask-block1').css('display', 'none')
+                    app.data.proDetails.number = 1 // 重置数量
+                },
+
+                // 减少单个商品数量
+                proMin: function () {
+                    var obj = app.data.proDetails // 商品详情
+                    if (obj.number > 1) {
+                        obj.number = parseInt(obj.number) - 1
+                        $('#proDetailsNumber').val(obj.number)
+                        app.data.proDetails = obj // 防止输入后数量不同步
+                    } else {
+                        message('error', '商品个数不能小于1')
+                    }
+                },
+
+                // 增加单个商品数量
+                proMax: function () {
+                    var obj = app.data.proDetails // 商品详情
+                    if (obj.number < (obj.originalQuantity - obj.shelveQuantity)) {
+                        obj.number = parseInt(obj.number) + 1
+                        $('#proDetailsNumber').val(obj.number)
+                        app.data.proDetails = obj // 防止输入后数量不同步
+                    } else {
+                        message('error', '商品个数达到上限')
+                    }
+                },
+
+                // 手动单个商品数量
+                proManual: function () {
+                    var obj = app.data.proDetails // 商品详情
+                    var number = parseInt($('#proDetailsNumber').val()) // 当前输入的数量
+                    if (number < 1) {
+                        message('error', '商品个数不能小于1')
+                    } else if (number > (obj.originalQuantity - obj.shelveQuantity)) {
+                        message('error', '商品个数达到上限')
+                        $('#proDetailsNumber').val(obj.originalQuantity - obj.shelveQuantity)
+                        obj.number = obj.originalQuantity - obj.shelveQuantity
+                    } else {
+                        obj.number = number
+                        app.data.proDetails = obj // 防止输入后数量不同步
+                    }
+                },
+
+                // 单个收货
+                collectPro: function () {
+                    var obj = app.data.proDetails // 商品详情
+                    var paramList = [{
+                        storehouseId: obj.storehouseId,
+                        batchNumber: obj.batchNumber,
+                        productSkuBarcode: obj.productSkuBarcode,
+                        quantity: obj.number
+                    }]
+                    
+                    showLoading()
+                    requestServer('/batchreceipt/shelves', 'POST', paramList).then((response) => {
+                        if (response.code == 1) {
+                            message('success', '收货成功')
+                            $('.mask-block1').css('display', 'none')
+                            $('#maskProDetails').html('')
+                            app.data.proDetails = {}
+                            $('#proList').html('')
+                            app.methods.getBatchreceipt() // 获取收货单明细
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 单个打码
+                codePro: function () {
+                    var obj = app.data.proDetails // 商品详情
+                    var paramList = [{
+                        type: 10, // 条形码
+                        datas: JSON.stringify([obj]),
+                        comments: '打印条形码'
+                    }]
+
+                    // 新增打印信息
+                    showLoading()
+                    requestServer('/print', 'POST', paramList).then((response) => {
+                        if (response.code == 1) {
+                            message('success', '请在PC打印面板进行查看')
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 单个收货并打码
+                collectCodePro: function () {
+                    var obj = JSON.parse(JSON.stringify(app.data.proDetails)) // 商品详情
+                    obj.shelveQuantity = obj.originalQuantity - obj.number // 只打印将要收的数量
+                    var paramList = [{
+                        type: 10, // 条形码
+                        datas: JSON.stringify([obj]),
+                        comments: '打印条形码'
+                    }]
+                    app.methods.collectPro() // 单个收货
+
+                    // 新增打印信息
+                    showLoading()
+                    requestServer('/print', 'POST', paramList).then((response) => {
+                        if (response.code == 1) {
+                            message('success', '请在PC打印面板进行查看')
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 打印所有条码
+                printAll: function () {
+                    var list = app.data.batchReceiptDetails // 收货单明细列表
+                    var list_ = []
+                    for (const i in list) {
+                        for (const j in list[i].batchReceiptDetails) {
+                            list_.push(list[i].batchReceiptDetails[j])
+                        }
+                    }
+                    var paramList = [{
+                        type: 10, // 条形码
+                        datas: JSON.stringify(list_),
+                        comments: '打印条形码'
+                    }]
+                    var r = confirm('新建打印所有条码？')
+                    if (r) {
+                        // 新增打印信息
+                        showLoading()
+                        requestServer('/print', 'POST', paramList).then((response) => {
+                            if (response.code == 1) {
+                                message('success', '请在PC打印面板进行查看')
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getBatchreceipt() // 获取收货单明细
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

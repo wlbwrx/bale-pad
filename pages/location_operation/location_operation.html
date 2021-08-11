@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        html, body {width: 100%;height: 100%;}
+        body {background-size: cover;background-image: url(../../img/login_bg.png);}
+        .row {padding: 20px 0;}
+        .index-bg {height: 100%;}
+        .index-list {background-color: #5FB878;width: 90%;height: 70px;line-height: 70px;text-align: center;color: #fff;border-radius: 10px;margin: 0 auto 15px auto;font-size: 22px;}
+        .index-list:active {opacity: 0.8;}
+    </style>
+</head>
+
+<body>
+    <div class="index-bg">
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">WMS系统</div>
+            </div>
+        </header>
+        <div class="row">
+            <div data-value="MOVE" class="col-12 hide">
+                <div class="index-list" onclick="app.methods.move()">移库</div>
+            </div>
+            <div data-value="MOVE_SHELF" class="col-12 hide">
+                <div class="index-list" onclick="app.methods.shelf()">移库上架</div>
+            </div>
+            <div data-value="INVENTORY" class="col-12 hide">
+                <div class="index-list" onclick="app.methods.inventory()">盘点</div>
+            </div>
+            <div data-value="LOCATOR_SKU_DELETE" class="col-12 hide">
+                <div class="index-list" onclick="app.methods.deleteSku()">删除库位SKU</div>
+            </div>
+            <div data-value="LOCATOR_LOCK" class="col-12 hide">
+                <div class="index-list" onclick="app.methods.unlock()">解锁库位</div>
+            </div>
+            <div class="col-12">
+                <div class="index-list" onclick="app.methods.querySku()">库位查询SKU</div>
+            </div>
+            <div class="col-12">
+                <div class="index-list" onclick="app.methods.queryLocation()">SKU查询库位</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 移库
+                move: function () {
+                    window.location.href = 'move.html'
+                },
+
+                // 移库上架
+                shelf: function () {
+                    window.location.href = 'shelf.html'
+                },
+
+                // 盘点
+                inventory: function () {
+                    window.location.href = 'inventory.html'
+                },
+
+                // 删除库位SKU
+                deleteSku: function () {
+                    window.location.href = 'delete_sku.html'
+                },
+
+                // 解锁库位
+                unlock: function () {
+                    window.location.href = 'unlock.html'
+                },
+
+                // 库位查询SKU
+                querySku: function () {
+                    window.location.href = 'query_sku.html'
+                },
+
+                // SKU查询库位
+                queryLocation: function () {
+                    window.location.href = 'query_location.html'
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                permissionButton() // 权限按钮
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

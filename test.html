@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>调试</title>
+    <script type="text/javascript" src="dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="js/quagga.min.js"></script>
+    <style>
+        #show {width: 200px;}
+        button {display: block;}
+    </style>
+</head>
+
+<body>
+    <input type="file" id="file" onchange="upLoad(this)" accept="image/png, image/jpeg, image/gif, image/jpg" capture="camera" />
+    <img src="" id="show" />
+    <button onclick="discern()">识别</button>
+    <div id="result"></div>
+
+    <script>
+        function upLoad (e) {
+            var files = $(e).context.files
+            var fileReader = new FileReader()
+            if (files.length) {
+                fileReader.onload = function (ev) {
+                    $('#show').attr('src', ev.target.result)
+                    e.value = '' // 清空
+                }
+                // 以二进制方式打开文件
+                fileReader.readAsDataURL(files[0])
+            }
+        }
+
+        function discern () {
+            Quagga.decodeSingle({
+                locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                },
+                decoder: {
+                    readers : ["code_128_reader"]
+                },
+                locate: true,
+                src: $('#show').attr('src')
+            }, function(result) {
+                console.log(result)
+                if (result.codeResult) {
+                    $('#result').text(result.codeResult.code)
+                } else {
+                    $('#result').text('识别不到，拍清晰一点')
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>

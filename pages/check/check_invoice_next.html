@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+        .pick-code {font-size: 18px;}
+        .input-block1 {padding: 10px;background-color: #f5f5f5;}
+        .invoice-number {font-size: 16px;color: #03A9F4;}
+        .check-goods {padding: 10px;background-color: #5FB878;color: #fff;text-align: center;}
+        .pro-block {padding-bottom: 70px;}
+        .pro-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px;display: flex;}
+        .pro-left img {display: block;width: 100px;height: 100px;border-radius: 5px;margin-right: 10px;}
+        .pro-right {width: 100%;margin: auto;}
+        .pro-all-number {position: absolute;right: 10px;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .pro-number {position: absolute;right: 10px;bottom: 10px;border: 1px solid #5FB878;color: #5FB878;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .pro-sku {font-size: 26px;color: #FF5722;}
+        .pro-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 45px;color: #FF5722;margin-top: 30px;}
+        .pro-success {color: #5FB878;}
+
+        /*全部完成标识*/
+        .icon-check {position: fixed;top: 50px;right: 10px;color: #5FB878;font-size: 30px;display: none;}
+
+        /*扫描复核窗口*/
+        .mask-block3 {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form3 {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .sweep-code {position: absolute;top: -10px;right: -10px;background-color: rgba(0, 0, 0, 0.5);width: 40px;height: 40px;line-height: 40px;text-align: center;color: #fff;border-radius: 50%;z-index: 1;}
+        .sweep-code i {font-size: 22px;font-weight: bold;}
+        .mask-pro-details img {width: 100%;}
+        .mask-pro-sku {font-size: 28px;color: #FF5722;margin: 5px 0;}
+        .mask-pro-specs {color: #FF5722;}
+        .mask-pro-message {margin: 5px 0;}
+
+        /*查看已复核的商品窗口*/
+        .mask-block1 {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form1 {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .mask-pro-list {height: 350px;overflow: auto;}
+        .check-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px 0;display: flex;}
+        .check-left img {display: block;width: 80px;height: 80px;border-radius: 5px;margin-right: 10px;}
+        .check-right {width: 100%;margin: auto;}
+        .check-all-number {position: absolute;right: 0;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 16px;border-radius: 5px;min-width: 30px;text-align: center;}
+        .check-number {position: absolute;right: 0;bottom: 10px;border: 1px solid #5FB878;color: #5FB878;padding: 5px;font-size: 16px;border-radius: 5px;min-width: 30px;text-align: center;}
+        .check-storehouse {font-size: 24px;color: #FF5722;}
+        .check-sku {font-size: 20px;}
+        .check-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 30px;margin-top: 20px;}
+
+        .footer-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 100px;display: none;}
+    </style>
+</head>
+
+<body>
+    <div> 
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">复核</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <div id="pickCode" class="pick-code"></div>
+        </div>
+        <div class="check-goods" onclick="app.methods.checkGoods()">查看已复核完的商品</div>
+        <div class="input-block1">
+            <div class="invoice-number"></div>
+        </div>
+        <div id="proList" class="pro-block">
+
+        </div>
+        <div class="footer-operation">
+            <input class="form-input" name="sku" onfocus="app.methods.selectSku()" onkeydown="app.methods.codeSku(event)" onblur="onBlur()" placeholder="扫描商品sku" />
+        </div>
+    </div>
+
+    <!--全部完成标识-->
+    <i class="iconfont icon-check"></i>
+
+    <!--扫描复核窗口-->
+    <div class="mask-block3">
+        <div class="mask-form3">
+            <div class="sweep-code" onclick="app.methods.hideCheck()"><i class="iconfont icon-close"></i></div>
+            <div id="maskProDetails" class="mask-pro-details">
+                <img src="">
+                <div class="mask-pro-sku"></div>
+                <div class="mask-pro-specs"></div>
+            </div>
+        </div>
+    </div>
+
+    <!--查看已复核的商品窗口-->
+    <div class="mask-block1">
+        <div class="mask-form1">
+            <div class="sweep-code" onclick="app.methods.hideGoods()"><i class="iconfont icon-close"></i></div>
+            <div id="maskProList" class="mask-pro-list">
+
+            </div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                invoiceDetail: {}, // 发货单详情
+                proList: [] // 发货单商品列表
+            },
+            methods: {
+                // 获取该拣货单下的发货单详情
+                getInvoiceDetails: function () {
+                    var invoiceDetail = JSON.parse(sessionStorage.getItem('checkInvoice'))
+                    app.data.invoiceDetail = invoiceDetail
+                    app.data.proList = invoiceDetail.invoiceDetails
+                    $('#pickCode').text('物流单号：' + invoiceDetail.pickCode)
+                    $('.invoice-number').text('发货单号：' + invoiceDetail.invoiceCode)
+                    // 显示发货单列表
+                    var list = invoiceDetail.invoiceDetails
+                    var html = ''
+                    for (const i in list) {
+                        // 默认当前复核数量是0
+                        list[i].number = 0
+                        html += `<div class="pro-list">
+                                    <div class="pro-left">
+                                        <img src="${list[i].productSkuImage}" />
+                                    </div>
+                                    <div class="pro-right">
+                                        <div class="pro-all-number">${list[i].quantity}</div>
+                                        <div id="pickIndex_${i}" class="pro-number">${list[i].number}</div>
+                                        <div class="pro-sku">${list[i].productSkuBarcode}</div>
+                                        <div class="pro-specs">${list[i].productSkuName}</div>
+                                    </div>
+                                </div>`
+                    }
+                    $('#proList').html(html)
+                },
+
+                // 选中扫描sku
+                selectSku: function () {
+                    $('input[name="sku"]').select()
+                },
+
+                // 扫描商品sku
+                codeSku: function (e) {
+                    var list = app.data.proList // 发货单商品列表
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+
+                    if (e.keyCode == 13 && sku != '') {
+                        // 判断商品列表中是否有该商品
+                        if (app.methods.isSku(sku)) {
+                            // 给商品增加复核数量
+                            var index = parseInt(app.methods.isSweepIndex(sku)) // 获取商品列表该商品下标
+                            if (list[index].number < list[index].quantity) {
+
+                                showLoading()
+                                requestServer('/wave/invoice/' + list[index].invoiceCode + '/match/' + list[index].productSkuBarcode + '/' + app.data.invoiceDetail.storehouseId + '/' + parseInt(list[index].number + 1), 'GET').then((response) => {
+                                    if (response.code == 1) {
+                                        list[index].number = parseInt(list[index].number) + 1
+                                        $('#pickIndex_' + index).text(list[index].number)
+
+                                        // 判断当前是否完成复核
+                                        if (list[index].number == list[index].quantity) {
+                                            // $('#pickIndex_' + index).next().addClass('pro-success')
+                                            // $('#pickIndex_' + index).next().next().addClass('pro-success')
+                                            app.methods.dealWithSku() // 处理商品列表
+                                        }
+
+                                        // 判断是否全部完成复核
+                                        if (app.methods.isCompletePickCheck()) {
+                                            $('.icon-check').show()
+                                            setTimeout(function () {
+                                                $('.mask-block3').css('display', 'none')
+                                            }, 800)
+                                            app.methods.pickCheckSure() // 确认复核
+                                        }
+                                        app.methods.checkDetails(list[index], 1, '已复核') // 复核详情
+                                        soundReminder('success')
+                                    } else if (response.code == -1 || response.code == -3) {
+                                        localStorage.removeItem('token')
+                                        window.location.href = '/pages/user/login.html'
+                                    } else {
+                                        message('error', response.message)
+                                        soundReminder('error')
+                                    }
+                                    $('input[name="sku"]').select()
+                                    hideLoading()
+                                }).catch((error) => {
+                                    hideLoading()
+                                })
+
+                            } else {
+                                message('error', '商品复核个数达到上限')
+                                soundReminder('error')
+                                $('input[name="sku"]').select()
+                            }
+                        } else {
+                            message('error', '商品列表无该商品')
+                            soundReminder('error')
+                            $('input[name="sku"]').select()
+                        }
+                    }
+                },
+
+                // 判断商品列表中是否有该商品
+                isSku: function (sku) {
+                    var list = app.data.proList // 发货单商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return true
+                        }
+                    }
+                    return false
+                },
+
+                // 获取商品列表该商品下标
+                isSweepIndex: function (sku) {
+                    var list = app.data.proList // 发货单商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return i
+                        }
+                    }
+                },
+
+                // 复核详情
+                checkDetails: function (obj, status, message) {
+                    $('.mask-block3').css('display', 'flex')
+                    var className = status == 1 ? 'text-green' : 'text-red'
+                    $('#maskProDetails').html(
+                        `<img src="${obj.productSkuImage}" />
+                        <div class="mask-pro-sku">${obj.productSkuBarcode}</div>
+                        <div class="mask-pro-specs">${obj.productSkuName}</div>
+                        <div class="mask-pro-message ${className}">${message}</div>`
+                    )
+                },
+
+                // 隐藏复核窗口
+                hideCheck: function () {
+                    $('.mask-block3').css('display', 'none')
+                    $('input[name="sku"]').select()
+                },
+
+                // 确认复核
+                pickCheckSure: function () {
+                    var storehouseId = app.data.invoiceDetail.storehouseId // 仓库
+                    var invoiceCode = app.data.invoiceDetail.invoiceCode // 发货单
+                    if (app.methods.isCompletePickCheck()) {
+                        showLoading()
+                        requestServer('/wave/invoice/' + invoiceCode + '/' + storehouseId + '/review', 'PUT').then((response) => {
+                            if (response.code == 1) {
+                                message('success', '复核完成')
+                                setTimeout(function () {
+                                    window.history.go(-2)
+                                }, 1000)
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    } else {
+                        message('error', '请复核所有货物后操作')
+                    }
+                },
+
+                // 判断是否全部完成复核
+                isCompletePickCheck: function () {
+                    var list = app.data.proList // 发货单商品列表
+                    var number = 0, quantity = 0
+                    for (const i in list) {
+                        number += list[i].number
+                        quantity += list[i].quantity
+                    }
+                    if (number == quantity) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
+
+                // 处理商品列表
+                dealWithSku: function () {
+                    var list = app.data.proList // 发货单商品列表
+                    var html = ''
+                    var html1 = ''
+
+                    // 未复核商品列表
+                    for (const i in list) {
+                        if (list[i].number != list[i].quantity) {
+                            html += `<div class="pro-list">
+                                    <div class="pro-left">
+                                        <img src="${list[i].productSkuImage}" />
+                                    </div>
+                                    <div class="pro-right">
+                                        <div class="pro-all-number">${list[i].quantity}</div>
+                                        <div id="pickIndex_${i}" class="pro-number">${list[i].number}</div>
+                                        <div class="pro-sku">${list[i].productSkuBarcode}</div>
+                                        <div class="pro-specs">${list[i].productSkuName}</div>
+                                    </div>
+                                </div>`
+                        }
+                    }
+                    $('#proList').html(html)
+
+                    // 已复核商品列表
+                    for (const i in list) {
+                        if (list[i].number == list[i].quantity) {
+                            html1 += `<div class="check-list">
+                                        <div class="check-left">
+                                            <img src="${list[i].productSkuImage}" />
+                                        </div>
+                                        <div class="check-right">
+                                            <div class="check-all-number">${list[i].quantity}</div>
+                                            <div class="check-number">${list[i].number}</div>
+                                            <div class="check-sku">${list[i].productSkuBarcode}</div>
+                                            <div class="check-specs">${list[i].productSkuName}</div>
+                                        </div>
+                                    </div>`
+                        }
+                    }
+                    $('#maskProList').html(html1)
+                },
+
+                // 查看已复核的商品窗口
+                checkGoods: function () {
+                    $('.mask-block1').css('display', 'flex')
+                },
+
+                // 隐藏已复核的商品窗口
+                hideGoods: function () {
+                    $('.mask-block1').css('display', 'none')
+                    $('input[name="sku"]').select()
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getInvoiceDetails() // 获取该拣货单下的发货单详情
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="sku"]').select()
+        }
+    </script>
+</body>
+
+</html>

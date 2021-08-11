@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .receipt-block {padding-bottom: 70px;}
+        .receipt-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px;display: flex;}
+        .receipt-left img {display: block;width: 100px;height: 100px;border-radius: 5px;margin-right: 10px;}
+        .receipt-right {width: 100%;margin: auto;}
+        .icon-del {position: absolute;top: 14px;right: 10px;font-size: 28px;color: #999;}
+        .receipt-sku {font-size: 28px;color: #FF5722;padding-right: 30px;}
+        .receipt-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 120px;margin-top: 40px;}
+        .receipt-operation {position: absolute;right: 10px;bottom: 10px;display: flex;margin-top: 5px;}
+        .receipt-operation .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .receipt-operation input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .receipt-operation input:focus {outline: none;}
+
+        .mask-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 100px;}
+        .skuNumber{
+            padding: 10px 15px;
+            text-align: right;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            font-size: 15px;
+        }
+        .skuNumber span{
+            color:#FF5722;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">扫描SKU收货</div>
+            </div>
+        </header>
+        <div class="skuNumber" id="skuNumber">
+            <!-- 计算已经加入的收货数量 -->
+            已扫描件数: <span id="skuNumberSpan">0</span> 件
+        </div>
+        <div id="receiptList" class="receipt-block">
+
+        </div>
+        <div class="mask-operation">
+            <input class="form-input" name="sku" onfocus="app.methods.selectSku()" onkeydown="app.methods.codeSku(event)" onblur="onBlur()" placeholder="扫描商品sku" />
+            <button id="receiptBtn" class="btn btn1 btn-green" onClick="app.methods.receipt()">收货</button>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                receiptList: [] // 待收货商品列表
+            },
+            methods: {
+                // 选中扫描sku
+                selectSku: function () {
+                    $('input[name="sku"]').select()
+                },
+                skuNumberFunc:function(receiptList){
+                    console.log(receiptList)
+                    let numberAll = 0
+                    if(receiptList.length > 0){
+                        receiptList.map(item => {
+                            numberAll += item.number
+                        })
+                    }
+                    $('#skuNumberSpan').html(numberAll)
+                },
+                // 扫描商品sku
+                codeSku: function (e) {
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+                    
+                    if (e.keyCode == 13 && sku != '') {
+                        showLoading()
+                        requestServer('/storehouse/sku/' + sku, 'GET').then((response) => {
+                            if (response.code == 1) {
+                                if (response.datas) {
+                                    var sku = response.datas.productSkuBarcode
+                                    // 判断是否已经存在sku
+                                    if (app.methods.isSku(sku)) {
+                                        var index = parseInt(app.methods.isIndex(sku)) // 获取待收货商品列表下标
+                                        app.data.receiptList[index].number += 1
+                                        $('#' + sku).val(app.data.receiptList[index].number)
+                                        soundReminder('success')
+                                    } else {
+                                        response.datas.number = 1
+                                        app.data.receiptList.push(response.datas)
+                                        var html = `<div id="product_${response.datas.productSkuBarcode}" class="receipt-list">
+                                                        <div class="receipt-left">
+                                                            <img src="${response.datas.productSkuImage}" />
+                                                        </div>
+                                                        <div class="receipt-right">
+                                                            <i class="iconfont icon-del" onclick="app.methods.receiptDel(${response.datas.productSkuBarcode})"></i>
+                                                            <div class="receipt-sku">${response.datas.productSkuBarcode}</div>
+                                                            <div class="receipt-specs">${response.datas.productSkuName}</div>
+                                                            <div class="receipt-operation">
+                                                                <button onclick="app.methods.receiptMin(${response.datas.productSkuBarcode})" class="btn">-</button>
+                                                                <input id="${response.datas.productSkuBarcode}" type="number" value="${response.datas.number}" onchange="app.methods.receiptManual(${response.datas.productSkuBarcode})" />
+                                                                <button onclick="app.methods.receiptMax(${response.datas.productSkuBarcode})" class="btn">+</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>`
+                                        $('#receiptList').append(html)
+                                        soundReminder('success')
+                                    }
+                                    app.methods.skuNumberFunc(app.data.receiptList)
+                                } else {
+                                    message('error', '获取失败')
+                                    soundReminder('error')
+                                }
+                                $('input[name="sku"]').select()
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                                $('input[name="sku"]').select()
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 判断是否已经存在sku
+                isSku: function (sku) {
+                    var list = app.data.receiptList
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return true
+                        }
+                    }
+                    return false
+                },
+
+                // 获取待收货商品列表下标
+                isIndex: function (sku) {
+                    var list = app.data.receiptList
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return i
+                        }
+                    }
+                },
+
+                // 删除收货的商品
+                receiptDel: function (sku) {
+                    var list = app.data.receiptList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待收货商品列表下标
+                    var r = confirm('确认删除？')
+                    if (r) {
+                        app.data.receiptList.splice(index, 1)
+                        $('#product_' + sku).remove()
+                    }
+                    app.methods.skuNumberFunc(app.data.receiptList)
+                },
+
+                // 减少收货数量
+                receiptMin: function (sku) {
+                    var list = app.data.receiptList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待收货商品列表下标
+                    if (list[index].number > 1) {
+                        list[index].number = parseInt(list[index].number) - 1
+                        $('#' + sku).val(list[index].number)
+                        app.data.receiptList = list
+                    } else {
+                        message('error', '收货个数不能小于1')
+                    }
+                    app.methods.skuNumberFunc(app.data.receiptList)
+                },
+
+                // 增加收货数量
+                receiptMax: function (sku) {
+                    var list = app.data.receiptList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待收货商品列表下标
+                    list[index].number = parseInt(list[index].number) + 1
+                    $('#' + sku).val(list[index].number)
+                    app.data.receiptList = list
+                    app.methods.skuNumberFunc(app.data.receiptList)
+                },
+
+                // 手动设置收货数量
+                receiptManual: function (sku) {
+                    var list = app.data.receiptList
+                    var index = parseInt(app.methods.isIndex(sku)) // 获取待收货商品列表下标
+                    var number = parseInt($('#' + sku).val()) // 当前输入的数量
+                    if (number < 1) {
+                        message('error', '收货个数不能小于1')
+                    } else {
+                        list[index].number = number
+                        app.data.receiptList = list
+                    }
+                    app.methods.skuNumberFunc(app.data.receiptList)
+                },
+
+                // 收货
+                receipt: function () {
+                    var list = app.data.receiptList // 待收货商品列表
+                    if (list.length) {
+                        var r = confirm('确认收货？')
+                        if (r) {
+                            var paramList = []
+                            for (const i in list) {
+                                paramList.push({
+                                    storehouseId: list[i].storehouseId,
+                                    productId: list[i].productId,
+                                    productName: list[i].productName,
+                                    productSkuName: list[i].productSkuName,
+                                    productSkuImage: list[i].productSkuImage,
+                                    productSkuBarcode: list[i].productSkuBarcode,
+                                    quantity: list[i].number
+                                })
+                            }
+                            showLoading()
+                            requestServer('/storehouse/rejection/sku/into', 'POST', paramList).then((response) => {
+                                if (response.code == 1) {
+                                    message('success', '收货成功')
+                                    app.data.receiptList = []
+                                    $('#receiptList').html('')
+                                    $('input[name="sku"]').val('')
+                                    $('input[name="sku"]').select()
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+                        }
+                    } else {
+                        message('error', '暂无要收货的商品')
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="sku"]').select()
+        }
+    </script>
+</body>
+
+</html>

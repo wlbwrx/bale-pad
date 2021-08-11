@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+        .shelf {font-size: 15px;}
+        .shelfed-goods {padding: 10px;background-color: #5FB878;color: #fff;text-align: center;}
+        .shelf-block {padding-bottom: 70px;}
+        .shelf-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px;display: flex;}
+        .shelf-left img {display: block;width: 100px;height: 100px;border-radius: 5px;margin-right: 10px;}
+        .shelf-right {width: 100%;margin: auto;}
+        .shelf-all-number {position: absolute;right: 10px;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .shelf-right input {width: 50px;position: absolute;right: 10px;bottom: 10px;border: 1px solid #5FB878;color: #5FB878;padding: 5px;font-size: 20px;text-align: center;}
+        .shelf-right input:focus {outline: none;}
+        .shelf-storehouse {font-size: 28px;color: #FF5722;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 45px;}
+        .shelf-sku {font-size: 22px;}
+        .shelf-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 55px;margin-top: 5px;}
+        .printBox {display: none;}
+
+        .footer-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 110px;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">盘点</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <div id="shelf" class="shelf"></div>
+        </div>
+        <div id="shelfList" class="shelf-block">
+            
+        </div>
+        <div class="footer-operation">
+            <input class="form-input" name="sku" onfocus="app.methods.selectSku()" onkeydown="app.methods.codeSku(event)" onblur="onBlur()" placeholder="扫描商品sku" />
+            <div class="footer-btn"><button class="btn btn1 btn-green" onClick="app.methods.disc()">盘点</button></div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                shelf: '', // 库位
+                proList: [] // 商品列表
+            },
+            methods: {
+                // 获取库位信息
+                getShelfDetails: function () {
+                    var shelf = UrlParam.paramValues('shelf')[0]
+                    app.data.shelf = shelf
+                    $('#shelf').text('库位：' + shelf)
+                },
+
+                // 选中扫描sku
+                selectSku: function () {
+                    $('input[name="sku"]').select()
+                },
+
+                // 扫描商品sku
+                codeSku: function (e) {
+                    var storehouseId = UrlParam.paramValues('storehouseId')[0]
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+
+                    if (e.keyCode == 13 && sku != '') {
+                        showLoading()
+                        requestJsonServer('/inventory/shelf/lock/sku', 'GET', {
+                            storehouseId: storehouseId,
+                            shelf: app.data.shelf,
+                            productSkuBarcode: sku
+                        }).then((response) => {
+                            if (response.code == 1) {
+                                soundReminder('success')
+                                // 判断商品列表中是否有该商品
+                                if (app.methods.isSku(sku)) {
+                                    var index = app.methods.isIndex(sku) // 获取商品列表该商品下标
+                                    app.data.proList[index].number = parseInt( app.data.proList[index].number) + 1
+                                    $('#' + app.data.proList[index].productSkuBarcode).val(app.data.proList[index].number)
+                                } else {
+                                    response.datas.number = 1 // 默认1个数量
+                                    app.data.proList.unshift(response.datas)
+                                    var html = `<div class="shelf-list">
+                                                    <div class="shelf-left">
+                                                        <img src="${response.datas.productSkuImage}" />
+                                                    </div>
+                                                    <div class="shelf-right">
+                                                        <div class="shelf-all-number">${response.datas.quantity}</div>
+                                                        <input id="${response.datas.productSkuBarcode}" type="number" value="${response.datas.number}" onchange="app.methods.moveManual(${response.datas.productSkuBarcode})" onblur="onBlur()" />
+                                                        <div class="shelf-storehouse">${response.datas.shelf}</div>
+                                                        <div class="shelf-sku">${response.datas.productSkuBarcode}</div>
+                                                        <div class="shelf-specs">${response.datas.productSkuName}</div>
+                                                    </div>
+                                                </div>`
+                                    $('#shelfList').prepend(html)
+                                }
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                            }
+                            $('input[name="sku"]').select()
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 判断商品列表中是否有该商品
+                isSku: function (sku) {
+                    var list = app.data.proList // 商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return true
+                        }
+                    }
+                    return false
+                },
+
+                // 获取商品列表该商品下标
+                isIndex: function (sku) {
+                    var list = app.data.proList // 商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return i
+                        }
+                    }
+                },
+
+                // 手动盘点数量
+                moveManual: function (sku) {
+                    var index = app.methods.isIndex(sku) // 获取商品列表该商品下标
+                    var obj = app.data.proList[index]
+                    var number = parseInt($('#' + sku).val())
+                    if (number < 0) {
+                        message('error', '盘点数量不能小于0')
+                        app.data.proList[index].number = 0
+                        $('#' + sku).val(0)
+                    } else {
+                        app.data.proList[index].number = number
+                        $('#' + sku).val(number)
+                    }
+                },
+
+                // 盘点
+                disc: function () {
+                    var proList = app.data.proList
+                    var paramList = {
+                        storehouseId: UrlParam.paramValues('storehouseId')[0],
+                        shelf: app.data.shelf,
+                        inventoryShelfList: []
+                    }
+
+                    if (proList.length > 0) {
+                        for (const i in proList) {
+                            paramList.inventoryShelfList.push({
+                                shelf: proList[i].shelf,
+                                productSkuBarcode: proList[i].productSkuBarcode,
+                                quantity: proList[i].number
+                            })
+                        }
+                        var r = confirm('确认盘点？')
+                        if (r) {
+                            showLoading()
+                            requestServer('/inventory/shelf/lock/check', 'POST', paramList).then((response) => {
+                                if (response.code == 1) {
+                                    message('success', '盘点完成')
+                                    setTimeout(function () {
+                                        window.history.go(-1)
+                                    }, 1000)
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+                        }
+                    } else {
+                        message('error', '请先扫描商品sku')
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getShelfDetails() // 获取库位信息
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="sku"]').select()
+        }
+    </script>
+</body>
+
+</html>

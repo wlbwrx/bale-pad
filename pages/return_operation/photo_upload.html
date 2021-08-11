@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .form-block {padding-bottom: 70px;}
+        .form-label {border-bottom: 1px solid #f5f5f5;display: flex;}
+        .form-label div {font-size: 20px;width: 175px;height: 50px;padding: 0 10px;line-height: 50px;}
+        .form-img {padding: 10px;}
+        .img-list {position: relative;width: 95px;height: 95px;margin-right: 4px;display: inline-block;}
+        .img-list i {position: absolute;top: 0;right: 0;font-weight: bold;color: #ffffff;padding: 6px;background-color: rgba(0, 0, 0, 0.3);}
+        .img-list img {width: 100%;height: 100%;}
+        .img-list input {position: absolute;top: 0;right: 0;bottom: 0;left: 0;width: 100%;opacity: 0;font-size: 0;cursor: pointer;}
+        .form-radio label {height: 50px;line-height: 50px;padding: 0 10px;font-size: 20px;display: flex;}
+        .form-radio input {width: 18px;height: 18px;margin: auto 10px;}
+        .form-comment {display: none;}
+        .mask-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .btn1 {flex: 1;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">拍照上传包裹</div>
+            </div>
+        </header>
+        <div id="questionForm" class="form-block">
+            <input type="hidden" name="changeType" value="5">
+            <div class="form-label">
+                <div>上传包裹图片 *</div>
+            </div>
+            <div class="form-img">
+                <div id="selectPackImg" class="img-list">
+                    <img src="../../img/select_img.jpg" />
+                    <input type="file" accept="image/*" multiple onchange="app.methods.selectPackImg(this)" />
+                </div>
+            </div>
+            <div class="form-label">
+                <div>退货单号 *</div>
+                <input type="text" class="form-input" name="returnNumber" />
+            </div>
+            <div class="form-label">
+                <div>买家电话 *</div>
+                <input type="text" class="form-input" name="tel" />
+            </div>
+            <div class="form-label">
+                <div>包裹类型 *</div>
+            </div>
+            <div class="form-radio">
+                <label>
+                    <input type="radio" name="packageType" value="0" />拒收
+                </label>
+                <label>
+                    <input type="radio" name="packageType" value="1" />站所
+                </label>
+                <label>
+                    <input type="radio" name="packageType" value="2" />自寄
+                </label>
+                <label>
+                    <input type="radio" name="packageType" value="3" />其他
+                </label>
+            </div>
+            <div class="form-label">
+                <div>问题类型 *</div>
+            </div>
+            <div class="form-radio">
+                <label for="1">
+                    <input id="1" type="checkbox" name="type" value="包裹号重复" onchange="app.methods.checkedQuestion(this)" />包裹号重复
+                </label>
+                <label for="2">
+                    <input id="2" type="checkbox" name="type" value="包裹号丢失" onchange="app.methods.checkedQuestion(this)" />包裹号丢失
+                </label>
+                <label for="3">
+                    <input id="3" type="checkbox" name="type" value="包裹号查询不到" onchange="app.methods.checkedQuestion(this)" />包裹号查询不到
+                </label>
+                <label for="4">
+                    <input id="4" type="checkbox" name="type" value="其他" onchange="app.methods.checkedQuestion(this)" />其他
+                </label>
+            </div>
+            <div class="form-label form-comment">
+                <div>备注</div>
+                <input type="text" class="form-input" name="comment" />
+            </div>
+        </div>
+        <div class="mask-operation">
+            <button class="btn btn1 btn-green" onclick="app.methods.submitQuestion()">提交</button>
+        </div>
+    </div>
+    
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                loading: true, // 是否提交中
+                fileList: [] // 包裹图片
+            },
+            methods: {
+                // 选择包裹图片
+                selectPackImg: function (e) {
+                    var files = $(e).context.files
+                    var list = app.data.fileList
+                    if (files.length) {
+                        for (let i = 0; i < files.length; i++) {
+                            list.push(files[i])
+                            $('#selectPackImg').before(`<div class="img-list">
+                                                            <i class="iconfont icon-close" onclick="app.methods.deletePackImg(this)"></i>
+                                                            <img src="${window.URL.createObjectURL(files[i])}" />
+                                                        </div>`)
+                        }
+                        app.data.fileList = list
+                    }
+                },
+
+                // 删除包裹图片
+                deletePackImg: function (e) {
+                    var dom = $(e).parent()
+                    var index = $('.form-img .img-list').index(dom)
+                    $(dom).remove()
+                    app.data.fileList.splice(index, 1)
+                },
+
+                // 其他
+                checkedQuestion: function (e) {
+                    var value = $(e).val().trim()
+                    var checked = $('#4').prop('checked') // 其他是否选中
+                    if (checked) {
+                        $('.form-comment').css('display', 'flex')
+                        $("input[name='comment']").focus()
+                        $('html,body').animate({
+                            scrollTop: document.documentElement.clientHeight
+                        }, 200)
+                    } else {
+                        $('.form-comment').css('display', 'none')
+                    }
+                },
+
+                // 提交
+                submitQuestion: function () {
+                    var parame = getParams('#questionForm')
+                    parame.images = app.data.fileList
+                    parame.comment = ''
+                    var checkList = []
+
+                    if (parame.images.length == 0) {
+						message('error', '包裹图片不能为空')
+						return false
+					}
+                    if (!parame.returnNumber) {
+                        message('error', '退货单号不能为空')
+						return false
+                    }
+                    if (!parame.tel) {
+						message('error', '买家电话不能为空')
+						return false
+                    }
+                    $("input[name='packageType']").each(function () {
+                        if ($(this).prop('checked')) {
+                            parame.packageType = $(this).val()
+                        }
+                    })
+                    if (!parame.packageType) {
+                        message('error', '包裹类型不能为空')
+						return false
+                    }
+                    $("input[name='type']").each(function () {
+                        if ($(this).val() == '其他') {
+                            var value = $("input[name='comment']").val().trim()
+                            if (value) {
+                                checkList.push({
+                                    name: value,
+                                    value: $(this).prop('checked')
+                                })
+                            } else {
+                                checkList.push({
+                                    name: $(this).val(),
+                                    value: $(this).prop('checked')
+                                })
+                            }
+                        } else {
+                            checkList.push({
+                                name: $(this).val(),
+                                value: $(this).prop('checked')
+                            })
+                        }
+                    })
+                    // 只要有一个选中就可以提交
+                    var checked = checkList.some((e) => {
+                        return e.value == true
+                    })
+                    if (!checked) {
+                        message('error', '问题类型不能为空')
+                        return false
+                    }
+                    for (const i in checkList) {
+                        if (checkList[i].value) {
+                            parame.comment += `${parame.comment == '' ? '' : '/'}` + checkList[i].name
+                        }
+                    }
+
+                    if (app.data.loading) {
+                        app.data.loading = false
+                        $('.mask-operation button').text('提交中')
+                        showLoading()
+                        requestFileServer('/storehouse/rejection/sku/question/image', 'POST', parame).then((response) => {
+                            if (response.code == 1) {
+                                message('success', '上传成功')
+                                setTimeout(function () {
+                                    window.location.href = 'photo_upload_next.html?parentId=' + response.datas
+                                }, 1000)
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            app.data.loading = true
+                            $('.mask-operation button').text('提交')
+                            hideLoading()
+                        }).catch((error) => {
+                            message('error', response.message)
+                            app.data.loading = true
+                            $('.mask-operation button').text('提交')
+                            hideLoading()
+                        })
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

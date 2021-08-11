@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        .picked-goods {padding: 10px;background-color: #5FB878;color: #fff;text-align: center;}
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">配货</div>
+            </div>
+        </header>
+        <div class="picked-goods" onclick="app.methods.pickedComplete()">查看已完成的拣货拨次单</div>
+        <div class="input-block">
+            <input class="form-input" name="waveCode" onfocus="app.methods.selectWaveCode()" onkeydown="app.methods.codeWaveCode(event)" onblur="onBlur()" placeholder="扫描拣货拨次单" />
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 选中拣货拨次单
+                selectWaveCode: function () {
+                    $('input[name="waveCode"]').select()
+                },
+
+                // 扫描拣货拨次单
+                codeWaveCode: function (e) {
+                    var waveCode = $('input[name="waveCode"]').val().trim()
+                    if (e.keyCode == 13 && waveCode != '') {
+                        showLoading()
+                        requestServer('/wave/' + waveCode + '/invoiceList', 'GET').then((response) => {
+                            if (response.code == 1) {
+                                if (response.datas.length) {
+                                    message('success', '获取成功')
+                                    soundReminder('success')
+                                    setTimeout(function () {
+                                        window.location.href = 'distribution_next.html?waveCode=' + waveCode
+                                    }, 1000)
+                                } else {
+                                    message('error', '获取不到发货单列表')
+                                    soundReminder('error')
+                                }
+                                $('input[name="waveCode"]').select()
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                                $('input[name="waveCode"]').select()
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 查看已完成的拣货拨次单
+                pickedComplete: function () {
+                    window.location.href = 'distribution_complete.html'
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="waveCode"]').select()
+        }
+    </script>
+</body>
+
+</html>

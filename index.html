@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <script type="text/javascript" src="dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="js/common.js"></script>
+    <script type="text/javascript" src="js/getUrlParam.js"></script>
+    <style>
+        html, body {width: 100%;height: 100%;}
+        body {background-size: cover;background-image: url("../../img/login_bg.png");}
+        .index-bg {height: 100%;}
+        .m-title .login-name {position: absolute;top: 0;left: 0;font-weight: 400;}
+        .m-title .login-out {position: absolute;top: 0;right: 0;border: 1px solid #999;color: #999;font-weight: normal;padding: 0 10px;border-radius: 5px;}
+        .m-title .login-out:active {opacity: 0.8;}
+        .index-list {background-color: #5FB878;width: 90px;height: 90px;line-height: 90px;text-align: center;color: #fff;border-radius: 50%;margin: 10px auto;font-size: 22px;}
+        .index-list:active {opacity: 0.8;}
+        .index-list span {display: block;height: 32px;line-height: 56px;}
+        .other {margin-top: 50px;}
+    </style>
+</head>
+
+<body>
+    <div class="index-bg">
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">
+                    <div class="login-name" id="loginName"></div>
+                    WMS系统
+                    <div class="login-out" onclick="app.methods.loginOut()">退出</div>
+                </div>
+            </div>
+        </header>
+        <div class="row">
+            <div data-value="SIGN_IN" class="col hide">
+                <div class="index-list" onclick="app.methods.signIn()">签收</div>
+            </div>
+            <div data-value="RECEIPT" class="col hide">
+                <div class="index-list" onclick="app.methods.receipt()">收货</div>
+            </div>
+            <div data-value="SHELF" class="col hide">
+                <div class="index-list" onclick="app.methods.shelf()">上架</div>
+            </div>
+            <div data-value="PICK" class="col hide">
+                <div class="index-list" onclick="app.methods.picking()">拣货</div>
+            </div>
+            <div data-value="DISTRIBUTION" class="col hide">
+                <div class="index-list" onclick="app.methods.distribution()">配货</div>
+            </div>
+            <div data-value="CHECK" class="col hide">
+                <div class="index-list" onclick="app.methods.check()">复核</div>
+            </div>
+            <div data-value="UNPICK" class="col hide">
+                <div class="index-list" onclick="app.methods.unpacking()">拆包</div>
+            </div>
+            <div class="col">
+                <div class="index-list" onclick="app.methods.queryInvoiceStatus()">
+                    <span>查发货</span>
+                    <span>单状态</span>
+                </div>
+            </div>
+        </div>
+        <div class="row other">
+            <div class="col">
+                <div class="index-list" onclick="app.methods.locationOperation()">
+                    <span>库位</span>
+                    <span>操作</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="index-list" onclick="app.methods.returnOperation()">
+                    <span>退回</span>
+                    <span>操作</span>
+                </div>
+            </div>
+            <div data-value="CHECK" class="col hide">
+                <div class="index-list" onclick="app.methods.outOfStock()">
+                    <span>无库位</span>
+                    <span>出库</span>
+                </div>
+            </div>
+            <div data-value="CHECK" class="col hide">
+                <div class="index-list" onclick="app.methods.clearance()">
+                    <span>清仓</span>
+                    <span>下架</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 获取当前登录的用户
+                getLoginName: function () {
+                    var loginName = localStorage.getItem('userName')
+                    $('#loginName').text(loginName)
+                },
+
+                // 签收
+                signIn: function () {
+                    window.location.href = 'pages/sign_in/sign_in.html'
+                },
+
+                // 收货
+                receipt: function () {
+                    window.location.href = 'pages/receipt/receipt.html'
+                },
+
+                // 上架
+                shelf: function () {
+                    window.location.href = 'pages/shelf/shelf.html'
+                },
+
+                // 拣货
+                picking: function () {
+                    window.location.href = 'pages/picking/picking.html'
+                },
+
+                // 配货
+                distribution: function () {
+                    window.location.href = 'pages/distribution/distribution.html'
+                },
+
+                // 复核
+                check: function () {
+                    window.location.href = 'pages/check/check.html'
+                },
+
+                // 拆包
+                unpacking: function () {
+                    window.location.href = 'pages/unpacking/unpacking.html'
+                },
+
+                // 查发货单状态
+                queryInvoiceStatus: function () {
+                    window.location.href = 'pages/query_invoice_status/query_invoice_status.html'
+                },
+
+                // 库位操作
+                locationOperation: function () {
+                    window.location.href = 'pages/location_operation/location_operation.html'
+                },
+
+                // 退回操作
+                returnOperation: function () {
+                    window.location.href = 'pages/return_operation/return_operation.html'
+                },
+
+                // 无库位出库
+                outOfStock: function () {
+                    window.location.href = 'pages/out_of_stock/out_of_stock.html'
+                },
+
+                // 清仓下架
+                clearance: function () {
+                    window.location.href = 'pages/clearance/clearance.html'
+                },
+
+                // 退出
+                loginOut: function () {
+                    var username = localStorage.getItem('userName')
+                    requestServer('/uaa/login/out/' + username, 'GET').then((response) => {
+
+                    }).catch((error) => {
+                        localStorage.removeItem('token')
+                        window.location.href = '/pages/user/login.html'
+                    })
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                permissionButton() // 权限按钮
+                app.methods.getLoginName() // 获取当前登录的用户
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+    </script>
+</body>
+
+</html>

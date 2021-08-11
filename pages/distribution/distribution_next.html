@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+        .wave-code {font-size: 15px;}
+        .invoice-block {padding-bottom: 70px;}
+        .invoice-list {position: relative;padding: 10px;border-bottom: 1px solid #f5f5f5;font-size: 14px;}
+        .invoice-list div {margin-top: 5px;}
+        .invoice-list div:first-child {margin-top: 0;}
+        .invoice-list i {position: relative;font-size: 54px;color: #FF5722;}
+        .invoice-list text {font-size: 24px;color: #FF5722;position: absolute;top: 17px;left: 14px;}
+        .invoice-list span {float: right;}
+        .details-btn {position: absolute;right: 10px;bottom: 50px;width: 80px;font-size: 14px;height: 30px;}
+        .turn-btn {position: absolute;right: 10px;bottom: 10px;width: 80px;font-size: 14px;height: 30px;}
+        .shortage-btn {position: absolute;right: 95px;bottom: 10px;width: 70px;font-size: 14px;height: 30px;}
+        .active-invoice {background-color: #ffee56}
+
+        /*提示发货框编号窗口*/
+        .mask-block {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form {position: relative;background-color: #fff;margin: auto;width: 40%;border-radius: 5px;padding: 10px;text-align: center;font-size: 50px;color: #FF5722;line-height: 100px;}
+
+        .mask-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+		.btn1 {width: 100px;}
+
+        /*查看配货详情*/
+        .mask-block1 {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form1 {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .sweep-code {position: absolute;top: -10px;right: -10px;background-color: rgba(0, 0, 0, 0.5);width: 40px;height: 40px;line-height: 40px;text-align: center;color: #fff;border-radius: 50%;z-index: 100;}
+        .sweep-code i {font-size: 22px;font-weight: bold;}
+        .mask-pro-list {height: 300px;overflow: auto;}
+        .pro-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px 0;display: flex;}
+        .pro-left img {display: block;width: 80px;height: 80px;border-radius: 5px;margin-right: 10px;}
+        .pro-right {width: 100%;margin: auto;}
+        .pro-all-number {position: absolute;right: 0;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 16px;border-radius: 5px;min-width: 30px;text-align: center;}
+        .pro-number {position: absolute;right: 0;bottom: 10px;border: 1px solid #5FB878;color: #5FB878;padding: 5px;font-size: 16px;border-radius: 5px;min-width: 30px;text-align: center;}
+        .pro-storehouse {font-size: 24px;color: #FF5722;}
+        .pro-sku {font-size: 20px;}
+        .pro-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 30px;margin-top: 5px;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">配货（发货单列表）</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <div id="waveCode" class="wave-code"></div>
+        </div>
+        <div id="invoiceList" class="invoice-block">
+
+        </div>
+        <div class="mask-operation">
+            <input class="form-input" name="sku" onfocus="app.methods.selectSku()" onkeydown="app.methods.codeSku(event)" onblur="onBlur()" placeholder="扫描商品sku" />
+			<button class="btn btn1 btn-green" onclick="app.methods.confirmDistribution()">确认</button>
+        </div>
+    </div>
+
+    <!--提示发货框编号窗口-->
+    <div class="mask-block">
+        <div id="deliveryBox" class="mask-form">
+
+        </div>
+    </div>
+
+    <!--查看配货详情窗口-->
+    <div class="mask-block1">
+        <div class="mask-form1">
+            <div class="sweep-code" onclick="app.methods.hideGoods()"><i class="iconfont icon-close"></i></div>
+            <div id="maskProList" class="mask-pro-list">
+
+            </div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                invoiceList: [], // 发货单列表
+                invoiceObj: {} // 当前操作对应的发货单
+            },
+            methods: {
+                // 获取该拣货单下的所有发货单
+                getInvoiceList: function (flag) {
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    app.data.invoiceList = ''
+                    $('#invoiceList').html('')
+                    showLoading()
+                    requestServer('/wave/' + waveCode + '/invoiceList', 'GET').then((response) => {
+                        if (response.code == 1) {
+                            $('#waveCode').text('拣货单号：' + UrlParam.paramValues('waveCode')[0])
+                            if (response.datas.length) {
+                                app.data.invoiceList = response.datas
+                                // 显示发货单列表
+                                var list = response.datas
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div id="invoice_${list[i].id}" class="invoice-list">
+                                                <div>修改时间：${timeFormat(list[i].updatedAt)}${app.methods.getInvoiceStatus(list[i].status)}</div>
+                                                <div>发货单号：${list[i].invoiceCode}</div>
+                                                <div>拣货框编：<i class="iconfont icon-kuang"><text>${list[i].containerCode}</text></i></div>
+                                                <button class="btn details-btn" onClick="app.methods.distributionDetails(${list[i].storehouseId}, '${list[i].invoiceCode}')">详情</button>
+                                                ${list[i].status != 50 && list[i].status != -10 ? `<button class="btn turn-btn" onClick="app.methods.turnReadyShelf(${list[i].storehouseId}, '${list[i].invoiceCode}')">转-待上架</button>` : ``}
+                                                ${list[i].status == 30 ? `<button class="btn shortage-btn" onClick="app.methods.shortage(${list[i].storehouseId}, '${list[i].invoiceCode}')">缺货</button>` : ``}
+                                            </div>`
+                                }
+                                $('#invoiceList').html(html)
+                                if (flag) {
+                                    app.methods.setHighlight() // 当前对应的发货单加高亮显示
+                                }
+                            } else {
+                                message('error', '获取不到发货单列表')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 获取发货单的状态
+                getInvoiceStatus: function (status) {
+                    switch (status) {
+                        case 20:
+                            return '<span class="text-red">拣货中</span>'
+                            break
+                        case 30:
+                            return '<span class="text-red">配货中</span>'
+                            break
+                        case 40:
+                            return '<span class="text-red">待复核</span>'
+                            break
+                        case 50:
+                            return '<span class="text-green">已完成</span>'
+                            break
+                        case 110:
+                            return '<span class="text-green">配货完成</span>'
+                            break
+                        case 120:
+                            return '<span class="text-red">缺货</span>'
+                            break
+                        case -10:
+                            return '<span class="text-gray">已取消</span>'
+                            break
+                        default:
+                            return '<span class="text-gray">无状态</span>'
+                    }
+                },
+
+                // 选中扫描sku
+                selectSku: function () {
+                    $('input[name="sku"]').select()
+                },
+
+                // 扫描商品sku
+                codeSku: function (e) {
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+
+                    if (e.keyCode == 13 && sku != '') {
+                        showLoading()
+                        requestJsonServer('/wave/sku/match', 'GET', {
+                            waveCode: waveCode,
+                            productSkuBarcode: sku
+                        }).then((response) => {
+                            if (response.code == 1) {
+                                if (response.datas) {
+                                    message('success', '配货成功')
+                                    $('input[name="sku"]').blur()
+                                    // 声音
+                                    // var baiDuToken = localStorage.getItem('baiDuToken')
+                                    // var audio = new Audio(`http://tsn.baidu.com/text2audio?lan=zh&ctp=1&cuid=abcdxxx&tok=${baiDuToken}&tex=${response.datas.containerCode}&vol=9&per=0&spd=5&pit=5&aue=3`)
+                                    // audio.play()
+                                    soundBasket(response.datas.containerCode)
+                                    app.methods.getInvoiceList(true) // 获取该拣货单下的所有发货单
+                                    app.data.invoiceObj = response.datas // 当前操作对应的发货单
+                                } else {
+                                    message('error', '配货失败')
+                                    soundReminder('error')
+                                    $('input[name="sku"]').select()
+                                }
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                                $('input[name="sku"]').select()
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 当前对应的发货单加高亮显示
+                setHighlight: function () {
+                    var list = app.data.invoiceList // 发货单列表
+                    var data = app.data.invoiceObj // 当前操作对应的发货单
+                    for (const i in list) {
+                        if (list[i].invoiceCode == data.invoiceCode) {
+                            $('#invoice_' + list[i].id).addClass('active-invoice')
+                            $('#deliveryBox').text(data.containerCode)
+                            $('.mask-block').css('display', 'flex')
+                            $('html, body').animate({scrollTop: $('#invoice_' + list[i].id).offset().top}, 0)
+                            setTimeout(function () {
+                                $('.mask-block').css('display', 'none')
+                                $('input[name="sku"]').select()
+                            }, 500)
+                        }
+                    }
+                },
+
+                // 详情
+                distributionDetails: function (storehouseId, invoiceCode) {
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    showLoading()
+                    requestJsonServer('/wave/waveMatch/detail/' + waveCode + '/' + invoiceCode + '/' + storehouseId, 'GET').then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                $('.mask-block1').css('display', 'flex')
+                                // 显示详情列表
+                                var list = response.datas
+                                var html = ''
+                                for (const i in list) {
+                                    html += `<div class="pro-list">
+                                                <div class="pro-left">
+                                                    <img src="${list[i].productSkuImage}" />
+                                                </div>
+                                                <div class="pro-right">
+                                                    <div class="pro-all-number">${list[i].quantity}</div>
+                                                    <div class="pro-number">${list[i].matchQuantity}</div>
+                                                    <div class="pro-storehouse">${list[i].productSkuBarcode}</div>
+                                                    <div class="pro-specs">${list[i].productSkuName}</div>
+                                                </div>
+                                            </div>`
+                                }
+                                $('#maskProList').html(html)
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 隐藏查看配货详情窗口
+                hideGoods: function () {
+                    $('.mask-block1').css('display', 'none')
+                },
+
+                // 转-待上架
+                turnReadyShelf: function (storehouseId, invoiceCode) {
+                    var r = confirm('确认转待上架？')
+                    if (r) {
+                        showLoading()
+                        requestServer('/wave/invoice/convert/' + invoiceCode + '/' + storehouseId, 'GET').then((response) => {
+                            if (response.code == 1) {
+                                message('success', '已转为待上架')
+                                app.methods.getInvoiceList() // 获取该拣货单下的所有发货单
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 缺货
+                shortage: function (storehouseId, invoiceCode) {
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    var r = confirm('确认缺货？')
+                    if (r) {
+                        showLoading()
+                        requestServer('/wave/invoice/short/' + waveCode + '/' + invoiceCode + '/' + storehouseId, 'PUT').then((response) => {
+                            if (response.code == 1) {
+                                message('success', '已清除，请前往发货单列表查询')
+                                app.methods.getInvoiceList() // 获取该拣货单下的所有发货单
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 确认完成
+				confirmDistribution : function(){
+                    var storehouseId = app.data.invoiceList[0].storehouseId // 默认取发货单列表里第一个仓库
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    if (app.methods.isCompleteDistribution()) {
+                        var r = confirm('确认完成配货？')
+                        if (r) {
+                            showLoading()
+                            requestServer('/wave/sku/match/' + waveCode + '/' + storehouseId + '/confirm', 'PUT').then((response) => {
+                                if (response.code == 1) {
+                                    message('success', '确认配货完成')
+                                    setTimeout(function () {
+                                        window.history.go(-1)
+                                    }, 1000)
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+                        }
+                    } else {
+                        message('error', '请配完所有货物后操作')
+                    }
+                },
+                
+                // 判断是否全部完成配货
+                isCompleteDistribution: function () {
+                    var list = app.data.invoiceList
+                    for (const i in list) {
+                        if (list[i].status == 20 || list[i].status == 30) {
+                            return false
+                        }
+                    }
+                    return true
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getInvoiceList() // 获取该拣货单下的所有发货单
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="sku"]').select()
+        }
+    </script>
+</body>
+
+</html>

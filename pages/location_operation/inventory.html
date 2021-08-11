@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .input-block {position: relative;padding: 10px;border-bottom: 1px solid #ddd;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">盘点</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <input class="form-input" name="shelf" onfocus="app.methods.selectShelf()" onkeydown="app.methods.scanShelf(event)" onblur="onBlur()" placeholder="扫描库位锁定" />
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 选中扫描库位
+                selectShelf: function () {
+                    $('input[name="shelf"]').select()
+                },
+
+                // 扫描库位锁定
+                scanShelf: function (e) {
+                    var shelf = $('input[name="shelf"]').val().trim()
+                    if (e.keyCode == 13 && shelf != '') {
+                        showLoading()
+                        requestJsonServer('/inventory/shelf/info', 'GET', {
+                            shelf: shelf
+                        }).then((response) => {
+                            if (response.code == 1) {
+                                if (response.datas.locked == 1) {
+                                    // 未锁定
+                                    app.methods.unLocked(response.datas.storehouseId, response.datas.shelf)
+                                } else if (response.datas.locked == 2) {
+                                    // 已锁定
+                                    app.methods.locked(response.datas.storehouseId, response.datas.shelf)
+                                }
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                            }
+                            $('input[name="shelf"]').select()
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 未锁定
+                unLocked: function (storehouseId, shelf) {
+                    var r = confirm('确认锁库？')
+                    if (r) {
+                        showLoading()
+                        requestJsonServer('/inventory/shelf/lock', 'GET', {
+                            storehouseId: storehouseId,
+                            shelf: shelf,
+                            locked: 2
+                        }).then((response) => {
+                            if (response.code == 1) {
+                                message('success', '锁库成功')
+                                soundReminder('success')
+                                window.location.href = 'inventory_next.html?storehouseId=' + storehouseId + '&shelf=' + shelf
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+                                window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 已锁定
+                locked: function (storehouseId, shelf) {
+                    var r = confirm('已锁库，是否继续？')
+                    if (r) {
+                        soundReminder('success')
+                        window.location.href = 'inventory_next.html?storehouseId=' + storehouseId + '&shelf=' + shelf
+                    }
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="shelf"]').select()
+        }
+    </script>
+</body>
+
+</html>

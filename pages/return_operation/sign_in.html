@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .input-block {position: relative;padding: 10px;border-bottom: 1px solid #ddd;}
+        .input-block img {position: absolute;top: 0;right: 0;width: 70px;height: 70px;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">签收</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <input class="form-input" name="oddNumber" onfocus="app.methods.selectOddNumber()" onkeydown="app.methods.codeOddNumber(event)" onblur="onBlur()" placeholder="扫描物流单号签收" />
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+
+            },
+            methods: {
+                // 选中扫描物流单号
+                selectOddNumber: function () {
+                    $('input[name="oddNumber"]').select()
+                },
+
+                // 扫描物流单号
+                codeOddNumber: function (e) {
+                    var oddNumber = $('input[name="oddNumber"]').val().trim()
+
+                    if (e.keyCode == 13 && oddNumber != '') {
+                        showLoading()
+                        requestServer('/wave/find/pickCode/' + oddNumber, 'GET').then((response) => {
+                            if (response.code == 1) {
+                                if (response.datas) {
+                                    // var r = confirm('该物流单号已存在，是否继续？')
+                                    // if (r) {
+                                    //     app.methods.signIn() // 物流单号签收
+                                    // }
+                                    message('error', '签收失败，重复物流单号')
+                                    soundReminder('error')
+                                } else {
+                                    app.methods.signIn() // 物流单号签收
+                                }
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+							    window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                                soundReminder('error')
+                            }
+                            $('input[name="oddNumber"]').select()
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 物流单号签收
+                signIn: function () {
+                    var oddNumber = $('input[name="oddNumber"]').val().trim()
+                    showLoading()
+                    requestServer('/wave/save/return/pickCode/' + oddNumber, 'GET').then((response) => {
+                        if (response.code == 1) {
+                            message('success', '签收成功')
+                            soundReminder('success')
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                            soundReminder('error')
+                        }
+                        $('input[name="oddNumber"]').select()
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="oddNumber"]').select()
+        }
+    </script>
+</body>
+
+</html>

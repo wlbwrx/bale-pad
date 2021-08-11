@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>芭乐仓库</title>
+    <link rel="shortcut icon" href="../../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/metro/easyui.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../dist/themes/icon.css">
+    <link rel="stylesheet" type="text/css" href="../../css/common.css">
+    <link rel="stylesheet" type="text/css" href="//at.alicdn.com/t/font_1234304_mv0y4kr7bgh.css">
+    <script type="text/javascript" src="../../dist/easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="../../dist/easyui/jquery.easyui.mobile.js"></script>
+    <script type="text/javascript" src="../../js/common.js"></script>
+    <script type="text/javascript" src="../../js/getUrlParam.js"></script>
+    <script type="text/javascript" src="../../js/jQuery.print.min.js"></script>
+    <script type="text/javascript" src="../../js/JsBarcode.all.min.js"></script>
+    <style>
+        .input-block {padding: 10px;border-bottom: 1px solid #ddd;}
+        .wave-code {font-size: 15px;}
+        .picked-goods {padding: 10px;background-color: #5FB878;color: #fff;text-align: center;}
+        .pick-block {padding-bottom: 70px;}
+        .pick-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px;display: flex;}
+        .pick-left img {display: block;width: 100px;height: 100px;border-radius: 5px;margin-right: 10px;}
+        .pick-right {width: 100%;margin: auto;}
+        .pick-all-number {position: absolute;right: 10px;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .pick-number {position: absolute;right: 10px;bottom: 10px;border: 1px solid #5FB878;color: #5FB878;padding: 5px;font-size: 20px;border-radius: 5px;min-width: 38px;text-align: center;}
+        .pick-storehouse {font-size: 28px;color: #FF5722;overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 45px;}
+        .pick-sku {font-size: 22px;}
+        .pick-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 45px;margin-top: 5px;}
+        .printBox {display: none;}
+
+        /*拣货窗口*/
+        .mask-block {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .sweep-code {position: absolute;top: -10px;right: -10px;background-color: rgba(0, 0, 0, 0.5);width: 40px;height: 40px;line-height: 40px;text-align: center;color: #fff;border-radius: 50%;z-index: 100;}
+        .sweep-code i {font-size: 22px;font-weight: bold;}
+        .mask-pick-storehouse {margin-top: 10px;}
+        .mask-pick-storehouse span {color: #FF5722;margin-left: 5px;font-weight: bold;}
+        .mask-pick-storehouse text {display: inline-block;}
+        .mask-pick-title {text-align: center;padding: 10px 0;}
+        .mask-pick-title text {color: #FF5722;margin-left: 5px;font-weight: bold;}
+        .mask-pick-operation {display: flex;margin: 5px 0;}
+        .mask-pick-number {flex: 1;}
+        .mask-pick-number {display: flex;padding: 10px 0;justify-content: center;}
+        .mask-pick-number .btn{width: 35px;height: 35px;color: #999;margin-left: -1px;}
+        .mask-pick-number input {width: 50px;text-align: center;font-size: 18px;border: 1px solid #ddd;margin-left: -1px;}
+        .mask-pick-number input:focus {outline: none;}
+        .mask-operation {display: flex;}
+        .btn2 {flex: 1;margin-left: -1px;font-size: 16px;}
+
+        /*查看已拣货的商品窗口*/
+        .mask-block1 {position: fixed;top: 0;bottom: 0;width: 100%;background-color: rgba(0, 0, 0, 0.3);overflow: auto;display: none;}
+        .mask-form1 {position: relative;background-color: #fff;margin: auto;width: 80%;border-radius: 5px;padding: 10px;}
+        .mask-pro-list {height: 350px;overflow: auto;}
+        .pro-list {position: relative;border-bottom: 1px solid #f5f5f5;padding: 10px 0;display: flex;}
+        .pro-left img {display: block;width: 80px;height: 80px;border-radius: 5px;margin-right: 10px;}
+        .pro-right {width: 100%;margin: auto;}
+        .pro-all-number {position: absolute;right: 0;background-color: #5FB878;border: 1px solid #5FB878;color: #fff;padding: 5px;font-size: 16px;border-radius: 5px;min-width: 30px;text-align: center;}
+        .pro-number {position: absolute;right: 0;bottom: 10px;border: 1px solid #5FB878;color: #5FB878;padding: 5px;font-size: 16px;border-radius: 5px;min-width: 30px;text-align: center;}
+        .pro-storehouse {font-size: 24px;color: #FF5722;}
+        .pro-sku {font-size: 20px;}
+        .pro-specs {overflow: hidden;text-overflow: ellipsis;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 1;padding-right: 30px;margin-top: 5px;}
+
+        .footer-operation {position: fixed;bottom: 0;width: 100%;display: flex;border-top: 1px solid #f5f5f5;}
+        .form-input {position: relative;border-bottom: 1px solid #ddd;}
+        .btn1 {width: 110px;}
+    </style>
+</head>
+
+<body>
+    <div>
+        <header>
+            <div class="m-toolbar">
+                <div class="m-title">拣货</div>
+            </div>
+        </header>
+        <div class="input-block">
+            <div id="waveCode" class="wave-code"></div>
+        </div>
+        <div class="picked-goods" onclick="app.methods.pickedGoods()">查看已拣货完的商品</div>
+        <div id="pickList" class="pick-block">
+
+        </div>
+        <div class="footer-operation">
+        <input class="form-input" name="sku" onfocus="app.methods.selectSku()" onkeydown="app.methods.codeSku(event)" onblur="onBlur()" placeholder="扫描商品sku" />
+            <div class="footer-btn"></div>
+        </div>
+    </div>
+
+    <!--拣货窗口-->
+    <div class="mask-block">
+        <div class="mask-form">
+            <div class="sweep-code" onclick="app.methods.hidePick()"><i class="iconfont icon-close"></i></div>
+            <div class="mask-pick-details">
+                <div class="mask-pick-storehouse">可拣库位：<span id="pickStorehouse"></span></div>
+                <div class="mask-pick-title">设置拣货数量，可拣<text id="pickUpNumber"></text></div>
+                <div class="mask-pick-operation">
+                    <div class="mask-pick-number">
+                        <button onclick="app.methods.pickMin()" class="btn">-</button>
+                        <input id="pickNumber" type="number" value="1" onchange="app.methods.pickManual()" onblur="onBlur()" />
+                        <button onclick="app.methods.pickMax()" class="btn">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mask-operation">
+                <button class="btn btn2" onClick="app.methods.hidePick()">取消</button>
+                <button class="btn btn2" onClick="app.methods.pickSure()">拣货</button>
+            </div>
+        </div>
+    </div>
+
+    <!--查看已拣货的商品窗口-->
+    <div class="mask-block1">
+        <div class="mask-form1">
+            <div class="sweep-code" onclick="app.methods.hideGoods()"><i class="iconfont icon-close"></i></div>
+            <div id="maskProList" class="mask-pro-list">
+
+            </div>
+        </div>
+    </div>
+
+    <section id="loading">
+        <div class="loader loader-3">
+            <div class="dot dot1"></div>
+            <div class="dot dot2"></div>
+            <div class="dot dot3"></div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        var app = {
+            data: {
+                pickDetailsList: [], // 拣货单明细商品列表
+                pickIndex: '' // 当前拣货的商品下标
+            },
+            methods: {
+                // 获取拣货单明细
+                getPickDetails: function () {
+                    var storehouseId = UrlParam.paramValues('storehouseId')[0]
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    showLoading()
+                    requestJsonServer('/wave/' + waveCode + '/' + storehouseId + '/details', 'GET', {}).then((response) => {
+                        if (response.code == 1) {
+                            if (response.datas) {
+                                app.data.pickDetailsList = response.datas
+                                $('#waveCode').text('拣货单号：' + UrlParam.paramValues('waveCode')[0])
+                                // 显示拣货单明细列表
+                                var list = response.datas
+                                var html = '' // 未拣货
+                                var html1 = '' // 已拣货
+                                for (const i in list) {
+                                    // 未拣货完的商品
+                                    if (list[i].pickQuantity != list[i].quantity) {
+                                        html += `<div class="pick-list" onclick="app.methods.pick(${i})">
+                                                    <div class="pick-left">
+                                                        <img src="${list[i].productSkuImage}" />
+                                                    </div>
+                                                    <div class="pick-right">
+                                                        <div class="pick-all-number">${list[i].quantity}</div>
+                                                        <div class="pick-number">${list[i].pickQuantity}</div>
+                                                        <div class="pick-storehouse">${list[i].shelf}</div>
+                                                        <div class="pick-sku">${list[i].productSkuBarcode}</div>
+                                                        <div class="pick-specs">${list[i].productSkuName}</div>
+                                                    </div>
+                                                </div>`
+                                    } else {
+                                        // 已拣货完的商品
+                                        html1 += `<div class="pro-list">
+                                                    <div class="pro-left">
+                                                        <img src="${list[i].productSkuImage}" />
+                                                    </div>
+                                                    <div class="pro-right">
+                                                        <div class="pro-all-number">${list[i].quantity}</div>
+                                                        <div class="pro-number">${list[i].pickQuantity}</div>
+                                                        <div class="pro-storehouse">${list[i].shelf}</div>
+                                                        <div class="pro-sku">${list[i].productSkuBarcode}</div>
+                                                        <div class="pro-specs">${list[i].productSkuName}</div>
+                                                    </div>
+                                                </div>`
+                                    }
+                                }
+                                $('#pickList').html(html)
+                                $('#maskProList').html(html1)
+                                
+                                // 判断显示按钮
+                                if (app.methods.isStartPick()) {
+                                    // 未开始拣货
+                                    $('.footer-btn').html(
+                                        `<button class="btn btn1" onClick="app.methods.deletePick()">删除拣货单</button>`
+                                    )
+                                } else {
+                                    // 开始拣货
+                                    $('.footer-btn').html(
+                                        `<button class="btn btn1 btn-green" onClick="app.methods.completePick()">完成拣货</button>`
+                                    )
+                                }
+                            } else {
+                                message('error', '获取失败')
+                            }
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 判断显示按钮
+                isStartPick: function () {
+                    var list = app.data.pickDetailsList // 拣货单明细商品列表
+                    for (const i in list) {
+                        if (list[i].pickQuantity != 0) {
+                            return false
+                        }
+                    }
+                    return true
+                },
+
+                // 选中扫描sku
+                selectSku: function () {
+                    $('input[name="sku"]').select()
+                },
+
+                // 扫描商品sku
+                codeSku: function (e) {
+                    var list = app.data.pickDetailsList // 拣货单明细商品列表
+                    var codeStr = $('input[name="sku"]').val().trim()
+                    var sku = '' // 商品sku
+                    if (codeStr.indexOf('~') > -1) {
+                        sku = codeStr.substring(0, codeStr.indexOf('~'))
+                    } else {
+                        sku = codeStr
+                    }
+
+                    if (e.keyCode == 13 && sku != '') {
+                        // 判断商品列表中是否有该商品
+                        if (app.methods.isSku(sku)) {
+                            // 判断该商品是否已经拣完货
+                            if (app.methods.isCheck(sku)) {
+                                message('error', '该商品已经拣完货')
+                                soundReminder('error')
+                                $('input[name="sku"]').select()
+                            } else {
+                                var index = app.methods.isIndex(sku) // 获取商品列表该商品下标
+                                var obj = app.data.pickDetailsList[index]
+                                showLoading()
+                                requestServer('/wave/sku/pick', 'PUT', {
+                                    storehouseId: obj.storehouseId,
+                                    waveCode: obj.waveCode,
+                                    productSkuBarcode: obj.productSkuBarcode,
+                                    shelf: obj.shelf,
+                                    quantity: 1
+                                }).then((response) => {
+                                    if (response.code == 1) {
+                                        message('success', '拣货成功')
+                                        soundReminder('success')
+                                        app.methods.getPickDetails() // 获取拣货单明细
+                                    } else if (response.code == -1 || response.code == -3) {
+                                        localStorage.removeItem('token')
+                                        window.location.href = '/pages/user/login.html'
+                                    } else {
+                                        message('error', response.message)
+                                        soundReminder('error')
+                                    }
+                                    $('input[name="sku"]').select()
+                                    hideLoading()
+                                }).catch((error) => {
+                                    hideLoading()
+                                })
+                            }
+                        } else {
+                            message('error', '商品列表无该商品')
+                            soundReminder('error')
+                            $('input[name="sku"]').select()
+                        }
+                    }
+                },
+
+                // 判断商品列表中是否有该商品
+                isSku: function (sku) {
+                    var list = app.data.pickDetailsList // 拣货单明细商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return true
+                        }
+                    }
+                    return false
+                },
+
+                // 判断该商品是否已经拣完货
+                isCheck: function (sku) {
+                    var list = app.data.pickDetailsList // 拣货单明细商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            if (list[i].pickQuantity == list[i].quantity) {
+                                return true
+                            } else {
+                                return false
+                            }
+                        }
+                    }
+                },
+
+                // 获取商品列表该商品下标
+                isIndex: function (sku) {
+                    var list = app.data.pickDetailsList // 拣货单明细商品列表
+                    for (const i in list) {
+                        if (sku == list[i].productSkuBarcode) {
+                            return i
+                        }
+                    }
+                },
+
+                // 拣货窗口
+                pick: function (index) {
+                    var obj = app.data.pickDetailsList[index]
+                    var storehouseList = obj.shelf.split(',') // 库位列表
+                    $('.mask-block').css('display', 'flex')
+                    $('#pickNumber').val(1)
+                    app.data.pickIndex = index
+                    $('#pickUpNumber').text(obj.quantity - obj.pickQuantity)
+                    $('#pickStorehouse').html('')
+                    for (const i in storehouseList) {
+                        $('#pickStorehouse').append(`<text>${storehouseList[i]}${i == storehouseList.length - 1 ? '' : '，'}</text>`)
+                    }
+                },
+
+                // 隐藏拣货窗口
+                hidePick: function () {
+                    $('.mask-block').css('display', 'none')
+                    $('input[name="sku"]').select()
+                },
+
+                // 减少拣货数量
+                pickMin: function () {
+                    var obj = app.data.pickDetailsList[app.data.pickIndex]
+                    var number = parseInt($('#pickNumber').val())
+                    if (number > 1) {
+                        number -= 1
+                        $('#pickNumber').val(number)
+                    } else {
+                        message('error', '拣货数量不能小于1')
+                    }
+                },
+
+                // 增加拣货数量
+                pickMax: function () {
+                    var obj = app.data.pickDetailsList[app.data.pickIndex]
+                    var number = parseInt($('#pickNumber').val())
+                    if (number < obj.quantity - obj.pickQuantity) {
+                        number += 1
+                        $('#pickNumber').val(number)
+                    } else {
+                        message('error', '拣货数量达到上限')
+                    }
+                },
+
+                // 手动拣货数量
+                pickManual: function () {
+                    var obj = app.data.pickDetailsList[app.data.pickIndex]
+                    var number = parseInt($('#pickNumber').val())
+                    if (number < 1) {
+                        message('error', '拣货数量不能小于1')
+                    } else if (number > obj.quantity - obj.pickQuantity) {
+                        message('error', '拣货数量达到上限')
+                        $('#pickNumber').val(obj.quantity - obj.pickQuantity)
+                    } else {
+                        $('#pickNumber').val(number)
+                    }
+                },
+
+                // 拣货提交
+                pickSure: function () {
+                    var obj = app.data.pickDetailsList[app.data.pickIndex]
+                    var number = $('#pickNumber').val()
+                    showLoading()
+                    requestServer('/wave/sku/pick', 'PUT', {
+                        storehouseId: obj.storehouseId,
+                        waveCode: obj.waveCode,
+                        productSkuBarcode: obj.productSkuBarcode,
+                        shelf: obj.shelf,
+                        quantity: $('#pickNumber').val()
+                    }).then((response) => {
+                        if (response.code == 1) {
+                            message('success', '拣货成功')
+                            app.methods.getPickDetails() // 获取拣货单明细
+                        } else if (response.code == -1 || response.code == -3) {
+                            localStorage.removeItem('token')
+                            window.location.href = '/pages/user/login.html'
+                        } else {
+                            message('error', response.message)
+                        }
+                        $('.mask-block').css('display', 'none')
+                        $('input[name="sku"]').select()
+                        hideLoading()
+                    }).catch((error) => {
+                        hideLoading()
+                    })
+                },
+
+                // 完成拣货
+                completePick: function () {
+                    var storehouseId = UrlParam.paramValues('storehouseId')[0]
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    if (app.methods.isCompletePick()) {
+                        var r = confirm('确认完成？')
+                        if (r) {
+                            showLoading()
+                            requestServer('/wave/' + waveCode + '/' + storehouseId + '/complete', 'PUT').then((response) => {
+                                if (response.code == 1) {
+                                    message('success', '拣货完成')
+                                    setTimeout(function () {
+                                        window.history.go(-1)
+                                    }, 1000)
+                                } else if (response.code == -1 || response.code == -3) {
+                                    localStorage.removeItem('token')
+                                    window.location.href = '/pages/user/login.html'
+                                } else {
+                                    message('error', response.message)
+                                }
+                                hideLoading()
+                            }).catch((error) => {
+                                hideLoading()
+                            })
+                        }
+                    } else {
+                        message('error', '请拣完所有货物后操作')
+                    }
+                },
+
+                // 判断是否全部完成拣货
+                isCompletePick: function () {
+                    var list = app.data.pickDetailsList
+                    var pickQuantity = 0, quantity = 0
+                    for (const i in list) {
+                        pickQuantity += list[i].pickQuantity
+                        quantity += list[i].quantity
+                    }
+                    if (pickQuantity == quantity) {
+                        return true
+                    } else {
+                        return false
+                    }
+                },
+
+                // 删除拣货单
+                deletePick: function () {
+                    var storehouseId = UrlParam.paramValues('storehouseId')[0]
+                    var waveCode = UrlParam.paramValues('waveCode')[0]
+                    var r = confirm('确认删除？')
+                    if (r) {
+                        showLoading()
+                        requestServer('/wave/' + waveCode + '/' + storehouseId, 'DELETE').then((response) => {
+                            if (response.code == 1) {
+                                message('success', '删除成功')
+                                sessionStorage.setItem('refresh', 'true')
+                                window.history.go(-1)
+                            } else if (response.code == -1 || response.code == -3) {
+                                localStorage.removeItem('token')
+							    window.location.href = '/pages/user/login.html'
+                            } else {
+                                message('error', response.message)
+                            }
+                            hideLoading()
+                        }).catch((error) => {
+                            hideLoading()
+                        })
+                    }
+                },
+
+                // 查看已拣货的商品窗口
+                pickedGoods: function () {
+                    $('.mask-block1').css('display', 'flex')
+                },
+
+                // 隐藏已拣货的商品窗口
+                hideGoods: function () {
+                    $('.mask-block1').css('display', 'none')
+                    $('input[name="sku"]').select()
+                }
+            },
+            events: {
+
+            },
+            init: function () {
+                checkLogin() // 判断当前是否登录
+                app.methods.getPickDetails() // 获取拣货单明细
+            }
+        }
+
+        // 初始化
+        $(function () {
+            app.init()
+        })
+
+        // 页面渲染完
+        window.onload = function () {
+            $('input[name="sku"]').select()
+        }
+    </script>
+</body>
+
+</html>
